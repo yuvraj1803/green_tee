@@ -1,0 +1,12 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (C) 2021-2023 Texas Instruments Incorporated - https://www.ti.com/
+ */
+
+/dts-v1/;
+
+#include "k3-j721s2-common-proc-board.dts"
+#include "k3-j721s2-ddr-evm-lp4-4266.dtsi"
+#include "k3-j721s2-ddr.dtsi"
+#include "k3-j721s2-common-proc-board-u-boot.dtsi"
+#include "k3-j721s2-r5.dtsi"
