@@ -70,3 +70,17 @@ QEMU_ARGS ?= \
 run:
 	gnome-terminal -e "nc -l 12345" --title="Linux Kernel"
 	qemu-system-aarch64 $(QEMU_ARGS)
+
+debug:
+	gnome-terminal -e "nc -l 12345" --title="Linux Kernel"
+	qemu-system-aarch64 $(QEMU_ARGS) -s -S
+
+GDB_ARGS ?= \
+	    -ex "add-symbol-file arm-trusted-firmware/build/qemu/debug/bl1/bl1.elf" \
+	    -ex "add-symbol-file arm-trusted-firmware/build/qemu/debug/bl2/bl2.elf" \
+	    -ex "add-symbol-file arm-trusted-firmware/build/qemu/debug/bl31/bl31.elf" \
+	    -ex "add-symbol-file linux/vmlinux" \
+	    -ex "target remote localhost:1234"
+
+gdb:
+	gdb-multiarch $(GDB_ARGS)
