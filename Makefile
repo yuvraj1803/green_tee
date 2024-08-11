@@ -64,7 +64,9 @@ QEMU_ARGS ?= \
 	     -bios $(TFA_BUILD_PATH)/../qemu_fw.bios \
 	     -drive file=linux/rootfs.ext4,if=none,format=raw,id=hd0 -device virtio-blk-device,drive=hd0 \
 	     -m 2G \
-	     -append "rootwait nokaslr root=/dev/vda init=/sbin/init console=ttyAMA0"
+	     -append "rootwait nokaslr root=/dev/vda init=/sbin/init console=ttyAMA0" \
+	     -serial tcp:localhost:12345
 
 run:
+	gnome-terminal -e "nc -l 12345" --title="Linux Kernel"
 	qemu-system-aarch64 $(QEMU_ARGS)
