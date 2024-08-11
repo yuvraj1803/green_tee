@@ -4,7 +4,7 @@ ROOT  ?= $(shell pwd)
 
 all: u-boot linux tfa
 
-clean: clean_tfa clean_linux clean_u-boot
+clean: clean_tfa clean_linux clean_u-boot clean_binaries
 
 # U-Boot
 .PHONY: u-boot
@@ -26,11 +26,18 @@ TFA_FLAGS ?= \
 	     ARM_LINUX_KERNEL_AS_BL33=0 \
 	     -j$(NPROC)
 
+ifeq ($(DEBUG),1)
+TFA_BUILD_PATH=arm-trusted-firmware/build/qemu/debug/
+else
+TFA_BUILD_PATH=arm-trusted-firmware/build/qemu/release/
+endif
+
 tfa: linux
 	cd arm-trusted-firmware && make $(TFA_FLAGS) all fip
+	cp $(TFA_BUILD_PATH)/qemu_fw.bios $(TFA_BUILD_PATH)/../
 clean_tfa:
-	cd arm-trusted-firmware && make clean && make realclean
-
+	rm $(TFA_BUILD_PATH)/../qemu_fw.bios
+	cd arm-trusted-firmware && make clean
 # Linux Kernel
 
 LINUX_FLAGS ?= \
@@ -46,6 +53,7 @@ linux:
 clean_linux:
 	cd linux && make clean
 
+
 # Run
 QEMU_ARGS ?= \
 	     -nographic \
@@ -53,7 +61,7 @@ QEMU_ARGS ?= \
 	     -cpu cortex-a72 \
 	     -smp 1 \
 	     -machine virt,secure=on \
-	     -bios arm-trusted-firmware/build/qemu/debug/qemu_fw.bios \
+	     -bios $(TFA_BUILD_PATH)/../qemu_fw.bios \
 	     -drive file=linux/rootfs.ext4,if=none,format=raw,id=hd0 -device virtio-blk-device,drive=hd0 \
 	     -m 2G \
 	     -append "rootwait nokaslr root=/dev/vda init=/sbin/init console=ttyAMA0"
