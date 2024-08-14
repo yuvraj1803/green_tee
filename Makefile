@@ -2,9 +2,17 @@ DEBUG ?= 1
 NPROC ?= $(shell nproc)
 ROOT  ?= $(shell pwd)
 
-all: u-boot linux tfa
+all: u-boot linux tfa green-tee
 
-clean: clean_tfa clean_linux clean_u-boot clean_binaries
+clean: clean_tfa clean_linux clean_u-boot clean_binaries clean_green-tee
+
+# Green TEE
+
+green-tee:
+	cd tee/ && make
+
+clean_green-tee:
+	cd tee/ && make clean
 
 # U-Boot
 .PHONY: u-boot
@@ -24,6 +32,10 @@ TFA_FLAGS ?= \
 	     DEBUG=$(DEBUG) \
 	     LOG_LEVEL=40 \
 	     ARM_LINUX_KERNEL_AS_BL33=0 \
+	     QEMU_USE_GIC_DRIVER=QEMU_GICV3 \
+	     BL32_RAM_LOCATION=tdram \
+	     BL32=$(ROOT)/tee/build/tee.bin \
+	     NEED_BL32=yes \
 	     -j$(NPROC)
 
 ifeq ($(DEBUG),1)
@@ -32,7 +44,7 @@ else
 TFA_BUILD_PATH=arm-trusted-firmware/build/qemu/release/
 endif
 
-tfa: linux
+tfa: linux u-boot green-tee
 	cd arm-trusted-firmware && make $(TFA_FLAGS) all fip
 	cp $(TFA_BUILD_PATH)/qemu_fw.bios $(TFA_BUILD_PATH)/../
 clean_tfa:
@@ -58,21 +70,22 @@ clean_linux:
 QEMU_ARGS ?= \
 	     -nographic \
 	     -kernel linux/arch/arm64/boot/Image \
-	     -cpu cortex-a72 \
+	     -cpu max \
 	     -smp 1 \
-	     -machine virt,secure=on \
+	     -machine virt,secure=on,gic-version=3 \
 	     -bios $(TFA_BUILD_PATH)/../qemu_fw.bios \
 	     -drive file=linux/rootfs.ext4,if=none,format=raw,id=hd0 -device virtio-blk-device,drive=hd0 \
 	     -m 2G \
 	     -append "rootwait nokaslr root=/dev/vda init=/sbin/init console=ttyAMA0" \
+	     -serial mon:stdio \
 	     -serial tcp:localhost:12345
 
 run:
-	gnome-terminal -e "nc -l 12345" --title="Linux Kernel"
+	gnome-terminal -e "nc -l 12345" --title="Green TEE"
 	qemu-system-aarch64 $(QEMU_ARGS)
 
 debug:
-	gnome-terminal -e "nc -l 12345" --title="Linux Kernel"
+	gnome-terminal -e "nc -l 12345" --title="Green TEE"
 	qemu-system-aarch64 $(QEMU_ARGS) -s -S
 
 GDB_ARGS ?= \
@@ -80,6 +93,7 @@ GDB_ARGS ?= \
 	    -ex "add-symbol-file arm-trusted-firmware/build/qemu/debug/bl2/bl2.elf" \
 	    -ex "add-symbol-file arm-trusted-firmware/build/qemu/debug/bl31/bl31.elf" \
 	    -ex "add-symbol-file linux/vmlinux" \
+	    -ex "add-symbol-file tee/build/tee.elf" \
 	    -ex "target remote localhost:1234"
 
 gdb:
