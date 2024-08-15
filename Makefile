@@ -35,8 +35,8 @@ TFA_FLAGS ?= \
 	     QEMU_USE_GIC_DRIVER=QEMU_GICV3 \
 	     BL32_RAM_LOCATION=tdram \
 	     BL32=$(ROOT)/tee/build/tee.bin \
-	     NEED_BL32=yes \
-	     -j$(NPROC)
+	     -j$(NPROC) \
+	     SPD=green_teed
 
 ifeq ($(DEBUG),1)
 TFA_BUILD_PATH=arm-trusted-firmware/build/qemu/debug/
