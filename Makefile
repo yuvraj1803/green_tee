@@ -60,7 +60,7 @@ LINUX_FLAGS ?= \
 .PHONY: linux
 linux:
 	cp configs/linux_config linux/.config
-	cd linux && make $(LINUX_FLAGS)
+	cd linux && make $(LINUX_FLAGS) Image
 
 clean_linux:
 	cd linux && make clean
