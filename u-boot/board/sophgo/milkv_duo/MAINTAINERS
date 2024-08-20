@@ -1,6 +1,0 @@
-Milk-V Duo
-M:	Kongyang Liu <seashell11234455@gmail.com>
-S:	Maintained
-F:	board/sophgo/milkv_duo/
-F:	configs/milkv_duo_defconfig
-F:	doc/board/sophgo/milkv_duo.rst
