@@ -50,6 +50,15 @@ tfa: linux u-boot green-tee
 clean_tfa:
 	rm $(TFA_BUILD_PATH)/../qemu_fw.bios
 	cd arm-trusted-firmware && make clean
+
+# Buildroot
+
+buildroot:
+	cp configs/buildroot_config buildroot/
+	cd buildroot/ && make -j$(NPROC)
+clean_buildroot:
+	cd buildroot/ && make clean
+
 # Linux Kernel
 
 LINUX_FLAGS ?= \
@@ -58,13 +67,14 @@ LINUX_FLAGS ?= \
 	       -j$(NPROC)
 
 .PHONY: linux
-linux:
+linux: buildroot
 	cp configs/linux_config linux/.config
 	cd linux && make $(LINUX_FLAGS) Image
+	cp buildroot/output/images/rootfs.ext4 linux/
 
 clean_linux:
 	cd linux && make clean
-
+	rm linux/rootfs.ext4
 
 # Run
 QEMU_ARGS ?= \
