@@ -1,3 +1,5 @@
+#include "kernel/sysregs.h"
+
 .section ".text.boot"
 
 .globl _start
@@ -5,6 +7,9 @@ _start:
 
 	bl setup_stack	
 	bl clear_bss
+
+	bl disable_mmu
+
 	bl setup_mmu
 
 	bl main
@@ -26,6 +31,13 @@ clear_bss:
 	bne 1b
 	ret
 
+disable_mmu:
+	ldr x0, =SCTLR_EL1_MMU_OFF
+	msr sctlr_el1, x0
+	isb
+	ret
+
 setup_mmu:
 	ret
+
 
