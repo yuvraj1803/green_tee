@@ -12,7 +12,12 @@ SECTIONS{
 	.rodata    : {*(.rodata)}
 	. = ALIGN(0x1000);
 
+	__bss_begin = .;
 	.bss	   : {*(.bss)}
+	__bss_end = .;
+
 	. = ALIGN(0x1000);
 	__tee_end = .;
+
+	__tee_limit = 0xf000000;
 }
