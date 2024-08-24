@@ -1,5 +1,6 @@
 #include <drivers/pl011.h>
 #include <mm/io.h>
+#include <lib/stdio.h>
 
 static int pl011_active = 0;
 
@@ -60,7 +61,9 @@ void pl011_putc(char c){
 
 	pl011_wait();
 	
-	if(c == '\n') c = '\r';
+	if(c == '\n') {
+		pl011_putc('\r');
+	}
 
 	io_write32(PL011_UARTDR, c & 0xFF);
 
@@ -95,4 +98,7 @@ void pl011_init(void){
 	pl011_set_uartcr();
 	pl011_mask_all_interrupts();
 	pl011_enable();
+
+	LOG("PL011 Initialised\n");
+
 }
