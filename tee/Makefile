@@ -12,7 +12,7 @@ ASMFLAGS=-g -I$(INC)
 OBJ += ./build/boot/boot.S.o
 OBJ += ./build/kernel/main.o
 OBJ += ./build/drivers/pl011.o
-OBJ += ./build/mm/io.o
+OBJ += ./build/mm/io.S.o
 
 all: build_setup tee.elf
 
@@ -31,6 +31,10 @@ build_setup:
 ./build/mm/%.o: ./mm/%.c
 	@echo CC $<
 	$(CC) $(CFLAGS) -c $< -o $@
+
+./build/mm/%.S.o: ./mm/%.S
+	@echo CC $<
+	$(CC) $(ASMFLAGS) -c $< -o $@
 
 ./build/drivers/%.o: ./drivers/%.c
 	@echo CC $<
