@@ -1,0 +1,2 @@
+config GREEN_TEE
+    bool "Enable support for Green TEE (Trusted Execution Environment)"
