@@ -26,7 +26,7 @@ clear_bss:
 	ldr x2, =0
 1:	
 	str x2, [x0]
-	add x0,x0,1
+	add x0,x0,4
 	cmp x0,x1
 	bne 1b
 	ret
