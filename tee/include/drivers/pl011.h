@@ -35,5 +35,7 @@
 
 
 void pl011_init(void);
-
+void pl011_write(char* str);
+void pl011_write_hex(unsigned long long x);
+void pl011_putc(char c);
 #endif

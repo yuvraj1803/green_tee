@@ -6,13 +6,16 @@ LD=$(TOOLCHAIN)ld
 OBJCOPY=$(TOOLCHAIN)objcopy
 OBJDUMP=$(TOOLCHAIN)objdump
 
-CFLAGS=-g -ffreestanding -nostdlib -nostartfiles -Wall -I$(INC)
+CFLAGS=-g -mgeneral-regs-only -ffreestanding -nostdlib -nostartfiles -Wall -I$(INC)
 ASMFLAGS=-g -I$(INC)
 
 OBJ += ./build/boot/boot.S.o
 OBJ += ./build/kernel/main.o
 OBJ += ./build/drivers/pl011.o
 OBJ += ./build/mm/io.S.o
+OBJ += ./build/lib/stdio.o
+OBJ += ./build/lib/string.o
+OBJ += ./build/lib/stdlib.o
 
 all: build_setup tee.elf
 
@@ -37,6 +40,10 @@ build_setup:
 	$(CC) $(ASMFLAGS) -c $< -o $@
 
 ./build/drivers/%.o: ./drivers/%.c
+	@echo CC $<
+	$(CC) $(CFLAGS) -c $< -o $@
+
+./build/lib/%.o: ./lib/%.c
 	@echo CC $<
 	$(CC) $(CFLAGS) -c $< -o $@
 

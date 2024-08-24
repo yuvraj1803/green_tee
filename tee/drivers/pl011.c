@@ -68,6 +68,22 @@ void pl011_putc(char c){
 
 }
 
+void pl011_write(char* str){
+	while(*str) pl011_putc(*str++);
+}	
+
+
+void pl011_write_hex(unsigned long long x){
+    unsigned int n;
+    int c;
+
+    pl011_write("0x");
+    for(c=60;c>=0;c-=4) {
+        n=(x>>c)&0xF;
+        n+=n>9?0x37:0x30;
+        pl011_putc(n);
+    }
+}
 
 void pl011_init(void){
 		
