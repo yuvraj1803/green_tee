@@ -1,3 +1,4 @@
+
 ENTRY(_start)
 
 SECTIONS{
@@ -18,6 +19,8 @@ SECTIONS{
 
 	. = ALIGN(0x1000);
 	__tee_end = .;
+	
 
+	__tee_stack_base = __tee_limit;
 	__tee_limit = 0xf000000;
 }

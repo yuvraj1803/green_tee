@@ -16,7 +16,7 @@ _start:
 	b .
 
 setup_stack:
-	ldr x0, =__tee_limit
+	ldr x0, =__tee_stack_base
 	mov sp, x0
 	ret
 
