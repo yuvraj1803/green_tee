@@ -11,6 +11,7 @@ ASMFLAGS=-g -I$(INC)
 
 OBJ += ./build/boot/boot.S.o
 OBJ += ./build/kernel/main.o
+OBJ += ./build/kernel/panic.o
 OBJ += ./build/drivers/pl011.o
 OBJ += ./build/mm/io.S.o
 OBJ += ./build/lib/stdio.o
