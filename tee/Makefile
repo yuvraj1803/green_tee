@@ -14,6 +14,7 @@ OBJ += ./build/kernel/main.o
 OBJ += ./build/kernel/panic.o
 OBJ += ./build/drivers/pl011.o
 OBJ += ./build/mm/io.S.o
+OBJ += ./build/mm/mm.o
 OBJ += ./build/lib/stdio.o
 OBJ += ./build/lib/string.o
 OBJ += ./build/lib/stdlib.o
