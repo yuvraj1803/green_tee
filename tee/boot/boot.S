@@ -40,4 +40,7 @@ disable_mmu:
 setup_mmu:
 	ret
 
-
+.globl halt
+halt:
+	wfe
+	b halt
