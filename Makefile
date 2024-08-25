@@ -99,6 +99,7 @@ debug:
 	qemu-system-aarch64 $(QEMU_ARGS) -s -S
 
 GDB_ARGS ?= \
+	    -ex "set confirm off" \
 	    -ex "add-symbol-file arm-trusted-firmware/build/qemu/debug/bl1/bl1.elf" \
 	    -ex "add-symbol-file arm-trusted-firmware/build/qemu/debug/bl2/bl2.elf" \
 	    -ex "add-symbol-file arm-trusted-firmware/build/qemu/debug/bl31/bl31.elf" \
