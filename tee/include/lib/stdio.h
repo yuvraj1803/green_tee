@@ -2,6 +2,6 @@
 #define __STDIO_H__
 
 void printf(char* fmt, ...);
-void LOG(char* str);
+void LOG(char* fmt,...);
 
 #endif
