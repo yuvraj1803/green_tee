@@ -1,6 +1,7 @@
 #include <mm/mm.h>
 #include <lib/stdio.h>
 #include <kernel/errno.h>
+#include <kernel/panic.h>
 
 #define MM_HEAP_PAGE_TAKEN 	0b1000
 #define MM_HEAP_PAGE_FREE  	0b0000
@@ -11,7 +12,11 @@ const uint64_t heap_size_pages = (MM_HEAP_END - MM_HEAP_BEGIN) / PAGE_SIZE;
 
 uint8_t heap_metadata[(MM_HEAP_END - MM_HEAP_BEGIN) / PAGE_SIZE];
 
+extern uint64_t __tee_end;
+
 void mm_heap_init(void){
+
+	if(__tee_end > MM_HEAP_END) panic("TEE image overlapping heap region. Reduce heap size or stack size.\n");
 
 	for(int page = 0; page < heap_size_pages; page++) heap_metadata[page] = MM_HEAP_PAGE_FREE;
 
