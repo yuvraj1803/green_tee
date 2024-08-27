@@ -80,7 +80,7 @@ clean_linux:
 QEMU_ARGS ?= \
 	     -nographic \
 	     -kernel linux/arch/arm64/boot/Image \
-	     -cpu cortex-a72 \
+	     -cpu max \
 	     -smp 1 \
 	     -machine virt,secure=on,gic-version=3 \
 	     -bios $(TFA_BUILD_PATH)/../qemu_fw.bios \
