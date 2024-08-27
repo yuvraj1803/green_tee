@@ -20,7 +20,7 @@ void mm_heap_init(void){
 
 	for(int page = 0; page < heap_size_pages; page++) heap_metadata[page] = MM_HEAP_PAGE_FREE;
 
-	LOG("Heap Initialised: %x - %x (size: %x)\n", MM_HEAP_BEGIN, MM_HEAP_END, MM_HEAP_SIZE);
+	LOG("Heap Initialised: %x - %x (size: %d %dK pages)\n", MM_HEAP_BEGIN, MM_HEAP_END, heap_size_pages, PAGE_SIZE/1024);
 
 }
 
