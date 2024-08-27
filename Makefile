@@ -2,9 +2,9 @@ DEBUG ?= 1
 NPROC ?= $(shell nproc)
 ROOT  ?= $(shell pwd)
 
-all: u-boot linux tfa green-tee
+all: buildroot u-boot linux tfa green-tee
 
-clean: clean_tfa clean_linux clean_u-boot clean_binaries clean_green-tee
+clean: clean_tfa clean_linux clean_u-boot clean_green-tee clean_buildroot
 
 # Green TEE
 
@@ -52,7 +52,7 @@ clean_tfa:
 	cd arm-trusted-firmware && make clean
 
 # Buildroot
-
+.PHONY: buildroot
 buildroot:
 	cp configs/buildroot_config buildroot/
 	cd buildroot/ && make -j$(NPROC)
