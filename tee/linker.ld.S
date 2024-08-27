@@ -1,4 +1,3 @@
-
 ENTRY(_start)
 
 SECTIONS{
@@ -8,6 +7,9 @@ SECTIONS{
 	. = ALIGN(0x1000);
 
 	.text	   : {*(.text)}
+	. = ALIGN(0x1000);
+	
+	.data	   : {*(.data)}
 	. = ALIGN(0x1000);
 
 	.rodata    : {*(.rodata)}
