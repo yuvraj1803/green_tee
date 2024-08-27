@@ -2,16 +2,16 @@ DEBUG ?= 1
 NPROC ?= $(shell nproc)
 ROOT  ?= $(shell pwd)
 
-all: buildroot u-boot linux tfa green-tee
+all: buildroot u-boot linux tfa tee
 
-clean: clean_tfa clean_linux clean_u-boot clean_green-tee clean_buildroot
+clean: clean_tfa clean_linux clean_u-boot clean_tee clean_buildroot
 
 # Green TEE
-
-green-tee:
+.PHONY: tee
+tee:
 	cd tee/ && make
 
-clean_green-tee:
+clean_tee:
 	cd tee/ && make clean
 
 # U-Boot
@@ -44,7 +44,7 @@ else
 TFA_BUILD_PATH=arm-trusted-firmware/build/qemu/release/
 endif
 
-tfa: linux u-boot green-tee
+tfa: linux u-boot tee
 	cd arm-trusted-firmware && make $(TFA_FLAGS) all fip
 	cp $(TFA_BUILD_PATH)/qemu_fw.bios $(TFA_BUILD_PATH)/../
 clean_tfa:
