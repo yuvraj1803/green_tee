@@ -3,10 +3,10 @@ ENTRY(_start)
 SECTIONS{
 	. = 0xe100000;
 	__tee_begin = .;	
-	__tee_boot_text_begin = .;
-	.text.boot : {*(.text.boot)}
+	__tee_asm_text_begin = .;
+	.text.asm : {*(.text.asm)}
 	. = ALIGN(0x1000);
-	__tee_boot_text_end = .;
+	__tee_asm_text_end = .;
 
 	__tee_text_begin = .;
 	.text	   : {*(.text)}

@@ -1,3 +1,5 @@
+.section ".text.asm"
+
 .globl io_write32
 io_write32:
 	str w1, [x0]
