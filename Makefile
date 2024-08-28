@@ -91,11 +91,9 @@ QEMU_ARGS ?= \
 	     -serial tcp:localhost:12345
 
 run:
-	gnome-terminal -e "nc -l 12345" --title="Green TEE"
 	qemu-system-aarch64 $(QEMU_ARGS)
 
 debug:
-	gnome-terminal -e "nc -l 12345" --title="Green TEE"
 	qemu-system-aarch64 $(QEMU_ARGS) -s -S
 
 GDB_ARGS ?= \
