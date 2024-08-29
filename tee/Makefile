@@ -6,8 +6,8 @@ LD=$(TOOLCHAIN)ld
 OBJCOPY=$(TOOLCHAIN)objcopy
 OBJDUMP=$(TOOLCHAIN)objdump
 
-CFLAGS=-g -mgeneral-regs-only -ffreestanding -nostdlib -nostartfiles -Wall -I$(INC)
-ASMFLAGS=-g -I$(INC)
+CFLAGS=-g -mgeneral-regs-only -ffreestanding -nostdlib -nostartfiles -Wall -I$(INC) -O0
+ASMFLAGS=-g -I$(INC) -O0
 
 OBJ += ./build/boot/boot.S.o
 OBJ += ./build/kernel/main.o
@@ -15,6 +15,8 @@ OBJ += ./build/kernel/panic.o
 OBJ += ./build/drivers/pl011.o
 OBJ += ./build/mm/io.S.o
 OBJ += ./build/mm/mm.o
+OBJ += ./build/mm/mmu.o
+OBJ += ./build/mm/mmu.S.o
 OBJ += ./build/lib/stdio.o
 OBJ += ./build/lib/string.o
 OBJ += ./build/lib/stdlib.o
@@ -33,11 +35,16 @@ build_setup:
 	@echo CC $<
 	$(CC) $(CFLAGS) -c $< -o $@
 
+
 ./build/mm/%.o: ./mm/%.c
 	@echo CC $<
 	$(CC) $(CFLAGS) -c $< -o $@
 
 ./build/mm/%.S.o: ./mm/%.S
+	@echo CC $<
+	$(CC) $(ASMFLAGS) -c $< -o $@
+
+./build/mmu/%.S.o: ./mmu/%.S
 	@echo CC $<
 	$(CC) $(ASMFLAGS) -c $< -o $@
 

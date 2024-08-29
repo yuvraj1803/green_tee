@@ -8,26 +8,34 @@ SECTIONS{
 	. = ALIGN(0x1000);
 	__tee_asm_text_end = .;
 
+	. += 0x1000;
+
 	__tee_text_begin = .;
 	.text	   : {*(.text)}
 	. = ALIGN(0x1000);
 	__tee_text_end = .;
+
+	. += 0x1000;
 
 	__tee_data_begin = .;
 	.data	   : {*(.data)}
 	. = ALIGN(0x1000);
 	__tee_data_end = .;
 
+	. += 0x1000;
+
 	__tee_rodata_begin = .;
 	.rodata    : {*(.rodata)}
 	. = ALIGN(0x1000);
 	__tee_rodata_end = .;
 
+	. += 0x1000;
+
 	__bss_begin = .;
 	.bss	   : {*(.bss)}
+	. = ALIGN(0x1000);
 	__bss_end = .;
 
-	. = ALIGN(0x1000);
 	__tee_end = .;
 	
 

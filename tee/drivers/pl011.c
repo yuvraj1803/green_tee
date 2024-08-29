@@ -1,6 +1,8 @@
 #include <drivers/pl011.h>
 #include <mm/io.h>
+#include <mm/mmu.h>
 #include <lib/stdio.h>
+#include <kernel/panic.h>
 
 static int pl011_active = 0;
 
@@ -98,6 +100,11 @@ void pl011_init(void){
 	pl011_set_uartcr();
 	pl011_mask_all_interrupts();
 	pl011_enable();
+
+	int ret = mmu_map_device(PL011_BASE, PL011_LIMIT - PL011_BASE);
+	if(ret < 0){
+		panic("PL011 MMU Mapping Failed.\n");
+	}
 
 	LOG("PL011 Initialised\n");
 
