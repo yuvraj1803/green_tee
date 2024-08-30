@@ -31,6 +31,7 @@ clear_bss:
 setup_vector_table:
 	adr x0, vector_table
 	msr vbar_el1, x0
+	isb
 	ret
 
 .globl halt
