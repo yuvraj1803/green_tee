@@ -28,6 +28,7 @@ OBJ += ./build/mm/mmu.S.o
 OBJ += ./build/lib/stdio.o
 OBJ += ./build/lib/string.o
 OBJ += ./build/lib/stdlib.o
+OBJ += ./build/lib/memory.o
 
 all: build_setup tee.elf
 
@@ -46,7 +47,6 @@ build_setup:
 ./build/kernel/%.S.o: ./kernel/%.S
 	@echo CC $<
 	$(CC) $(ASMFLAGS) -c $< -o $@
-
 
 ./build/mm/%.o: ./mm/%.c
 	@echo CC $<
