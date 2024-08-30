@@ -91,6 +91,11 @@ void pl011_write_hex(unsigned long long x){
 }
 
 void pl011_init(void){
+
+	int ret = mmu_map_device(PL011_BASE, PL011_LIMIT - PL011_BASE);
+	if(ret < 0){
+		panic("PL011 MMU Mapping Failed.\n");
+	}
 		
 	pl011_disable();
 	pl011_wait();
@@ -101,10 +106,7 @@ void pl011_init(void){
 	pl011_mask_all_interrupts();
 	pl011_enable();
 
-	int ret = mmu_map_device(PL011_BASE, PL011_LIMIT - PL011_BASE);
-	if(ret < 0){
-		panic("PL011 MMU Mapping Failed.\n");
-	}
+
 
 	LOG("PL011 Initialised\n");
 
