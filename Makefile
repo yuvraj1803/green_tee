@@ -107,3 +107,6 @@ GDB_ARGS ?= \
 
 gdb:
 	gdb-multiarch $(GDB_ARGS)
+
+nc:
+	nc -l 12345 -k
