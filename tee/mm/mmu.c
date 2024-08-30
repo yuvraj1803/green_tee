@@ -55,6 +55,11 @@ no_mem:
 
     return -ENOMEM;
 }
+
+// If mmu_map_range() and mmu_map_device() is called after MMU is turned on
+// caller must make sure to disable MMU and invalidate EL1 TLBs after mapping has taken place.
+
+
 int mmu_map_range(uint64_t virt, uint64_t phys_start, uint64_t phys_end, uint64_t flags){
 
     if(phys_start & (PAGE_SIZE - 1)) return -EALIGN;
