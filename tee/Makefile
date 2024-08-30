@@ -12,6 +12,11 @@ ASMFLAGS=-g -I$(INC) -O0
 OBJ += ./build/boot/boot.S.o
 OBJ += ./build/kernel/main.o
 OBJ += ./build/kernel/panic.o
+OBJ += ./build/kernel/exceptions.S.o
+OBJ += ./build/kernel/exceptions.o
+OBJ += ./build/kernel/sync.o
+OBJ += ./build/kernel/async.o
+OBJ += ./build/kernel/entry.S.o
 OBJ += ./build/drivers/pl011.o
 OBJ += ./build/mm/io.S.o
 OBJ += ./build/mm/mm.o
@@ -34,6 +39,10 @@ build_setup:
 ./build/kernel/%.o: ./kernel/%.c
 	@echo CC $<
 	$(CC) $(CFLAGS) -c $< -o $@
+
+./build/kernel/%.S.o: ./kernel/%.S
+	@echo CC $<
+	$(CC) $(ASMFLAGS) -c $< -o $@
 
 
 ./build/mm/%.o: ./mm/%.c

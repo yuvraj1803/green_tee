@@ -7,6 +7,7 @@ _start:
 
 	bl setup_stack	
 	bl clear_bss
+	bl setup_vector_table
 
 	bl main
 	b .
@@ -27,8 +28,10 @@ clear_bss:
 	bne 1b
 	ret
 
-
-
+setup_vector_table:
+	adr x0, vector_table
+	msr vbar_el1, x0
+	ret
 
 .globl halt
 halt:
