@@ -4,7 +4,11 @@
 .global green_teed_enter_sp
 
 green_teed_enter_sp:
+
+    mov x3, sp
+    str x3, [x0, 0]
     sub sp, sp, #GREEN_TEED_SP_CONTEXT_SIZE
+
     stp x19, x20, [sp, #GREEN_TEED_SP_CONTEXT_X19]
     stp x21, x22, [sp, #GREEN_TEED_SP_CONTEXT_X21]
     stp x23, x24, [sp, #GREEN_TEED_SP_CONTEXT_X23]
@@ -14,8 +18,11 @@ green_teed_enter_sp:
 
     b el3_exit
 
-.globl green_teed_enter_sp
+.globl green_teed_exit_sp
 green_teed_exit_sp:
+
+    mov sp, x0
+    sub sp, sp, #GREEN_TEED_SP_CONTEXT_SIZE
 
     ldp x19, x20, [sp, #GREEN_TEED_SP_CONTEXT_X19]
     ldp x21, x22, [sp, #GREEN_TEED_SP_CONTEXT_X21]
@@ -25,4 +32,6 @@ green_teed_exit_sp:
     ldp x29, x30, [sp, #GREEN_TEED_SP_CONTEXT_X29]
 
     add sp, sp, #GREEN_TEED_SP_CONTEXT_SIZE
+
+    mov x0,xzr
     ret
