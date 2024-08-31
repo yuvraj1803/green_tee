@@ -9,13 +9,13 @@ __arm_smccc_call:
     mov x9, x2
 
     // load args into hardware registers from args[]
-    ldr x1, [x8, #0]
-    ldr x2, [x8, #8]
-    ldr x3, [x8, #16]
-    ldr x4, [x8, #24]
-    ldr x5, [x8, #32]
-    ldr x6, [x8, #40]
-    ldr x7, [x8, #48]
+    ldr x1, [x8, #8*1]
+    ldr x2, [x8, #8*2]
+    ldr x3, [x8, #8*3]
+    ldr x4, [x8, #8*4]
+    ldr x5, [x8, #8*5]
+    ldr x6, [x8, #8*6]
+    ldr x7, [x8, #8*7]
 
     sub sp, sp, 8
     str x9, [sp]
