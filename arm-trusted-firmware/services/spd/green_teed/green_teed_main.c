@@ -123,24 +123,28 @@ uintptr_t green_teed_smc_handler(uint32_t smc_fid, u_register_t x1, u_register_t
 		panic();
 	}
 
-
-	if(is_caller_non_secure(flags)){	// SMC from non-secure world not handle for the time being
-		SMC_RET1(handle, SMC_UNK);
+	if(is_caller_non_secure(flags)){
+		switch(smc_fid){
+			default:
+				panic();
+		}
 	}
 
-	switch(smc_fid){
+	if(is_caller_secure(flags)){
+		switch(smc_fid){
 
-		case GREEN_TEE_SMC_ENTRY_DONE:
+			case GREEN_TEE_SMC_ENTRY_DONE:
 
-			if(x1 == 0) panic();	// S-EL1 has to return its VBAR_EL1. Otherwise, something has gone wrong...
+				if(x1 == 0) panic();	// S-EL1 has to return its VBAR_EL1. Otherwise, something has gone wrong...
 
-			green_tee_init_vector_table(x1, cpu);
+				green_tee_init_vector_table(x1, cpu);
 
-			green_teed_synchronous_sp_exit(cpu_context);
-			break;
+				green_teed_synchronous_sp_exit(cpu_context);
+				break;
 
-		default:
-			panic();
+			default:
+				panic();
+		}
 	}
 
 
