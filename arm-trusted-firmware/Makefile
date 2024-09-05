@@ -288,7 +288,7 @@ ASFLAGS			+=	$(CPPFLAGS)                 			\
 TF_CFLAGS		+=	$(CPPFLAGS) $(TF_CFLAGS_$(ARCH))		\
 				-ffunction-sections -fdata-sections		\
 				-ffreestanding -fno-builtin -fno-common		\
-				-Os -std=gnu99
+				-O0 -std=gnu99
 
 ifeq (${SANITIZE_UB},on)
 	TF_CFLAGS	+=	-fsanitize=undefined -fno-sanitize-recover
