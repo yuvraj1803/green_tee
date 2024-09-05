@@ -42,4 +42,9 @@ mmu_enable:
 	isb
 	ret
 
-
+.globl mmu_is_enabled
+mmu_is_enabled:
+    mrs x0, sctlr_el1
+    ldr x1, =SCTLR_EL1_M
+    and x0, x0, x1
+    ret

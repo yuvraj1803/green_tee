@@ -84,10 +84,12 @@ int mmu_map_device(uint64_t base, uint64_t size){
     if(base & (PAGE_SIZE - 1)) return -EALIGN;
     if(size & (PAGE_SIZE - 1)) return -EALIGN;
 
+    int mmu_was_enabled = mmu_is_enabled();
     mmu_disable();
     int ret = mmu_map_range(base, base, base + size, PT_ATTR0_DEVICE | PT_SECURE | PT_AP_UNPRIVILEGED_NA_PRIVILEGED_RW | PT_AF | PT_UXN | PT_PXN);
     mmu_invalidate_tlb();
-    mmu_enable();
+
+    if(mmu_was_enabled) mmu_enable();
 
     return ret;
 

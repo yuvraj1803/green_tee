@@ -11,6 +11,7 @@ void mmu_invalidate_tlb();
 void mmu_load_ttbr0_el1(uint64_t ttbr);
 void mmu_load_mair_el1(uint64_t mair);
 void mmu_load_tcr_el1(uint64_t tcr);
+int mmu_is_enabled();
 
 
 #define PT_BLOCK                                     (0b01)
