@@ -5,7 +5,7 @@
 
 int green_tee_init(void){
 
-    int ret;
+    int ret = 0;;
 
     ret = green_tee_arch_init();
     if(ret < 0) goto green_tee_init_fail;
