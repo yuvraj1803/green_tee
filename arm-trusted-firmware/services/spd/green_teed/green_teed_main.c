@@ -3,6 +3,7 @@
 #include <common/runtime_svc.h>
 #include <common/debug.h>
 #include <bl31/bl31.h>
+#include <bl31/interrupt_mgmt.h>
 #include <plat/common/platform.h>
 #include <arch_helpers.h>
 #include <arch.h>
@@ -112,6 +113,20 @@ void green_tee_init_vector_table(uint64_t vbar_el1, int cpu){
 
 }
 
+static uint64_t green_teed_sel1_interrupt_handler(uint32_t id, uint32_t flags, void* handle, void* cookie){
+	return 0;
+}
+
+static int green_teed_register_interrupt_handler(){
+	u_register_t flags = 0;
+	int ret = 0;
+
+	set_interrupt_rm_flag(flags, NON_SECURE);
+	ret = register_interrupt_type_handler(INTR_TYPE_S_EL1, green_teed_sel1_interrupt_handler, flags);
+
+	return ret;
+}
+
 uintptr_t green_teed_smc_handler(uint32_t smc_fid, u_register_t x1, u_register_t x2, u_register_t x3, u_register_t x4, void* cookie, void* handle, u_register_t flags){
 
 	// x1: address of exception vector table passed by S-EL1
@@ -138,6 +153,9 @@ uintptr_t green_teed_smc_handler(uint32_t smc_fid, u_register_t x1, u_register_t
 				if(x1 == 0) panic();	// S-EL1 has to return its VBAR_EL1. Otherwise, something has gone wrong...
 
 				green_tee_init_vector_table(x1, cpu);
+
+				int ret = green_teed_register_interrupt_handler();
+				if(ret < 0) panic();
 
 				green_teed_synchronous_sp_exit(cpu_context);
 				break;
