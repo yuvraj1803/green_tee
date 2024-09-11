@@ -2,7 +2,7 @@ DEBUG ?= 1
 NPROC ?= $(shell nproc)
 ROOT  ?= $(shell pwd)
 
-all: buildroot u-boot linux tfa tee
+all: buildroot u-boot linux tfa tee client
 
 clean: clean_tfa clean_linux clean_u-boot clean_tee clean_buildroot
 
@@ -67,7 +67,7 @@ LINUX_FLAGS ?= \
 	       -j$(NPROC)
 
 .PHONY: linux
-linux: buildroot
+linux: client buildroot
 	cp configs/linux_config linux/.config
 	cd linux && make $(LINUX_FLAGS) Image
 	cp buildroot/output/images/rootfs.ext4 linux/
@@ -76,6 +76,12 @@ clean_linux:
 	cd linux && make clean
 	rm linux/rootfs.ext4
 
+# Client
+.PHONY: client
+client:
+	sudo sh mount_client.sh
+clean_client:
+	sudo sh clean_client.sh
 # Run
 QEMU_ARGS ?= \
 	     -nographic \
