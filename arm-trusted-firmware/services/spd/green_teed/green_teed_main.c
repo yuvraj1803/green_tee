@@ -141,7 +141,7 @@ uintptr_t green_teed_smc_handler(uint32_t smc_fid, u_register_t x1, u_register_t
 	if(is_caller_non_secure(flags)){
 		switch(GET_SMC_NUM(smc_fid)){
 			case GREEN_TEE_SMC_LINUX_INIT:
-				INFO("from LINUX\n");
+				INFO("Green TEED contact from non-secure world established.\n");
 				break;
 			default:
 				panic();
