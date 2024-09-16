@@ -6,7 +6,9 @@
 #include <sys/ioctl.h>
 
 
-int main(){
+int main(int argc, char* argv[]){
+
+	if(argc < 2) return 1;
 
 	int tee_fd = open("/dev/green_tee", O_RDWR);
 	if(tee_fd < 0){
@@ -15,7 +17,7 @@ int main(){
 	}
 
 	struct green_tee_print_data print_data;
-	print_data.str = "this is yuvraj from linux";
+	print_data.str = argv[1];
 	print_data.len = strlen(print_data.str);
 
 	if(ioctl(tee_fd, GREEN_TEE_PRINT, &print_data) < 0){
