@@ -51,6 +51,6 @@ typedef struct green_tee_vector_table{
 
 uint64_t green_teed_enter_sp(uint64_t* stack);
 uint64_t green_teed_exit_sp(uint64_t stack);
-void green_tee_init_vector_table(uint64_t vbar_el1, int cpu);
+void green_tee_init_vector_table(uint64_t vbar_el1);
 
 #endif  /* __ASSEMBLER__ */

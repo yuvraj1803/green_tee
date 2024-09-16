@@ -1,5 +1,6 @@
 #include "green_teed.h"
 #include "green_tee_smc.h"
+#include "green_tee.h"
 #include <common/runtime_svc.h>
 #include <common/debug.h>
 #include <bl31/bl31.h>
@@ -15,8 +16,8 @@
 
 
 
-green_tee_cpu_context_t cpu_context_data[PLATFORM_CORE_COUNT];
-green_tee_vector_table_t vector_table[PLATFORM_CORE_COUNT];
+green_tee_cpu_context_t cpu_context_data;
+green_tee_vector_table_t vector_table;
 
 int32_t green_teed_synchronous_sp_entry(green_tee_cpu_context_t* context){
 	cm_el1_sysregs_context_restore(SECURE);
@@ -38,8 +39,7 @@ int32_t green_teed_synchronous_sp_exit(green_tee_cpu_context_t* context){
 
 int32_t green_teed_init(void){
 
-	int my_cpu = plat_my_core_pos();
-	green_tee_cpu_context_t* my_context = &cpu_context_data[my_cpu];
+	green_tee_cpu_context_t* my_context = &cpu_context_data;
 
 	if(!my_context) goto green_teed_init_fail;
 
@@ -74,9 +74,8 @@ int32_t green_teed_setup(void){
 		goto setup_fail;
 	}
 
-	int cpu = plat_my_core_pos();
-	cm_set_context(&cpu_context_data[cpu].cpu_context, SECURE);
-	cpu_context_data[cpu].mpidr_el1 = read_mpidr_el1();
+	cm_set_context(&cpu_context_data.cpu_context, SECURE);
+	cpu_context_data.mpidr_el1 = read_mpidr_el1();
 	SET_PARAM_HEAD(ep_info, PARAM_EP, VERSION_1, EP_SECURE | EP_EE_LITTLE | EP_ST_ENABLE);
 	ep_info->spsr = SPSR_64(MODE_EL1, MODE_SP_ELX, DISABLE_ALL_EXCEPTIONS);
 
@@ -89,27 +88,27 @@ setup_fail:
 	return 1;
 }
 
-void green_tee_init_vector_table(uint64_t vbar_el1, int cpu){
+void green_tee_init_vector_table(uint64_t vbar_el1){
 
-	vector_table[cpu].current_el_sp0_sync	 = vbar_el1 + 0x0;
-	vector_table[cpu].current_el_sp0_irq 	 = vbar_el1 + 0x80;
-	vector_table[cpu].current_el_sp0_fiq	 = vbar_el1 + 0x100;
-	vector_table[cpu].current_el_sp0_serror  = vbar_el1 + 0x180;
+	vector_table.current_el_sp0_sync	 = vbar_el1 + 0x0;
+	vector_table.current_el_sp0_irq 	 = vbar_el1 + 0x80;
+	vector_table.current_el_sp0_fiq		 = vbar_el1 + 0x100;
+	vector_table.current_el_sp0_serror   = vbar_el1 + 0x180;
 
-	vector_table[cpu].current_el_spx_sync 	 = vbar_el1 + 0x200;
-	vector_table[cpu].current_el_spx_irq 	 = vbar_el1 + 0x280;
-	vector_table[cpu].current_el_spx_fiq 	 = vbar_el1 + 0x300;
-	vector_table[cpu].current_el_spx_serror  = vbar_el1 + 0x380;
+	vector_table.current_el_spx_sync 	 = vbar_el1 + 0x200;
+	vector_table.current_el_spx_irq 	 = vbar_el1 + 0x280;
+	vector_table.current_el_spx_fiq 	 = vbar_el1 + 0x300;
+	vector_table.current_el_spx_serror   = vbar_el1 + 0x380;
 
-	vector_table[cpu].lower_el_64_sync	 = vbar_el1 + 0x400;
-	vector_table[cpu].lower_el_64_irq	 = vbar_el1 + 0x480;
-	vector_table[cpu].lower_el_64_fiq	 = vbar_el1 + 0x500;
-	vector_table[cpu].lower_el_64_serror	 = vbar_el1 + 0x580;
+	vector_table.lower_el_64_sync	 = vbar_el1 + 0x400;
+	vector_table.lower_el_64_irq	 = vbar_el1 + 0x480;
+	vector_table.lower_el_64_fiq	 = vbar_el1 + 0x500;
+	vector_table.lower_el_64_serror	 = vbar_el1 + 0x580;
 
-	vector_table[cpu].lower_el_32_sync	 = vbar_el1 + 0x600;
-	vector_table[cpu].lower_el_32_irq 	 = vbar_el1 + 0x680;
-	vector_table[cpu].lower_el_32_fiq	 = vbar_el1 + 0x700;
-	vector_table[cpu].lower_el_32_serror 	 = vbar_el1 + 0x780;
+	vector_table.lower_el_32_sync	 = vbar_el1 + 0x600;
+	vector_table.lower_el_32_irq 	 = vbar_el1 + 0x680;
+	vector_table.lower_el_32_fiq	 = vbar_el1 + 0x700;
+	vector_table.lower_el_32_serror  = vbar_el1 + 0x780;
 
 }
 
@@ -131,17 +130,29 @@ uintptr_t green_teed_smc_handler(uint32_t smc_fid, u_register_t x1, u_register_t
 
 	// x1: address of exception vector table passed by S-EL1
 
-	int cpu = plat_my_core_pos();
-	green_tee_cpu_context_t* cpu_context = &cpu_context_data[cpu];
+	green_tee_cpu_context_t* cpu_context = &cpu_context_data;
 
 	if(!cpu_context) {
 		panic();
 	}
 
 	if(is_caller_non_secure(flags)){
+
+
 		switch(GET_SMC_NUM(smc_fid)){
 			case GREEN_TEE_SMC_LINUX_INIT:
 				INFO("Green TEED contact from non-secure world established.\n");
+				break;
+			case GREEN_TEE_SMC_LINUX_PRINT:
+				
+				cm_el1_sysregs_context_save(NON_SECURE);
+				cm_set_elr_el3(SECURE, vector_table.current_el_spx_sync);
+
+				cm_el1_sysregs_context_restore(SECURE);
+				cm_set_next_eret_context(SECURE);
+
+				SMC_RET4(&cpu_context->cpu_context, smc_fid, x1, x2, x3);
+				
 				break;
 			default:
 				panic();
@@ -155,7 +166,7 @@ uintptr_t green_teed_smc_handler(uint32_t smc_fid, u_register_t x1, u_register_t
 
 				if(x1 == 0) panic();	// S-EL1 has to return its VBAR_EL1. Otherwise, something has gone wrong...
 
-				green_tee_init_vector_table(x1, cpu);
+				green_tee_init_vector_table(x1);
 
 				int ret = green_teed_register_interrupt_handler();
 				if(ret < 0) panic();
@@ -173,9 +184,16 @@ uintptr_t green_teed_smc_handler(uint32_t smc_fid, u_register_t x1, u_register_t
 
 }
 
-DECLARE_RT_SVC(green_teed_rt_svc,
+DECLARE_RT_SVC(green_teed_rt_svc_fast,
 		OEN_TOS_START,
 		OEN_TOS_END,
 		SMC_TYPE_FAST,
 		green_teed_setup,
+		green_teed_smc_handler);
+
+DECLARE_RT_SVC(green_teed_rt_svc_yld,
+		OEN_TOS_START,
+		OEN_TOS_END,
+		SMC_TYPE_YIELD,
+		NULL,
 		green_teed_smc_handler);
