@@ -12,7 +12,7 @@ void mmu_load_ttbr0_el1(uint64_t ttbr);
 void mmu_load_mair_el1(uint64_t mair);
 void mmu_load_tcr_el1(uint64_t tcr);
 int mmu_is_enabled();
-
+int mmu_map_range(uint64_t virt, uint64_t phys_start, uint64_t phys_end, uint64_t flags);
 
 #define PT_BLOCK                                     (0b01)
 #define PT_TABLE                                     (0b11)
