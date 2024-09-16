@@ -7,4 +7,5 @@ cd ../../../linux
 umount root
 rm -rf root
 cd ../
+cd client && make clean
 exit
