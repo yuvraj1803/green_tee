@@ -1,3 +1,6 @@
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
+
 #include <linux/green_tee/green_tee.h>
 #include <linux/printk.h>
 #include <linux/errno.h>
@@ -27,4 +30,5 @@ int green_tee_arch_init(void){
 
     return 0;
 }
- 
+
+#pragma GCC pop_options

@@ -1,3 +1,6 @@
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
+
 #include <linux/green_tee/green_tee.h>
 #include <linux/printk.h>
 #include <linux/kernel.h>
@@ -28,6 +31,8 @@ static long green_tee_ioctl(struct file* file, unsigned int ioctl, unsigned long
         if(copy_from_user(__str, print_data.str, print_data.len)){
             return -EPERM;
         }
+
+        print_data.str = __str;
 
         if(green_tee_arch_print_data(&print_data)){
             return -EPERM;
@@ -83,3 +88,6 @@ green_tee_init_fail:
 }
 
 device_initcall(green_tee_init);
+
+
+#pragma GCC pop_options
