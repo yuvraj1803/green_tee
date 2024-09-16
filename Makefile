@@ -71,7 +71,6 @@ linux: client buildroot
 	cp configs/linux_config linux/.config
 	cd linux && make $(LINUX_FLAGS) Image
 	cp buildroot/output/images/rootfs.ext4 linux/
-
 clean_linux:
 	cd linux && make clean
 	rm linux/rootfs.ext4
@@ -79,8 +78,10 @@ clean_linux:
 # Client
 .PHONY: client
 client:
+	cd client && make
 	sudo sh mount_client.sh
 clean_client:
+	cd client && clean
 	sudo sh clean_client.sh
 # Run
 QEMU_ARGS ?= \
