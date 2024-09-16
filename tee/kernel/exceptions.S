@@ -3,6 +3,9 @@
 
 .section ".text.asm"
 
+.globl __green_tee_smc_handler
+__green_tee_smc_handler:
+    b green_tee_smc_handler
 
 .macro ventry handler
 .align 7 // each handler must be aligned to 2^7 (128) bytes

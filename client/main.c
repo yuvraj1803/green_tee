@@ -15,7 +15,7 @@ int main(){
 	}
 
 	struct green_tee_print_data print_data;
-	print_data.str = "this is from linux";
+	print_data.str = "this is yuvraj from linux";
 	print_data.len = strlen(print_data.str);
 
 	if(ioctl(tee_fd, GREEN_TEE_PRINT, &print_data) < 0){

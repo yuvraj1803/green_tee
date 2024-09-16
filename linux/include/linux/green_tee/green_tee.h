@@ -16,7 +16,6 @@ struct green_tee_print_data{
 
 int green_tee_arch_print_data(struct green_tee_print_data* print_data);
 int green_tee_arch_init(void);
-
 int green_tee_init(void);
 
 #endif

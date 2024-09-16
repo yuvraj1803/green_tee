@@ -18,6 +18,7 @@
 
 green_tee_cpu_context_t cpu_context_data;
 green_tee_vector_table_t vector_table;
+uint64_t green_tee_smc_handler;
 
 int32_t green_teed_synchronous_sp_entry(green_tee_cpu_context_t* context){
 	cm_el1_sysregs_context_restore(SECURE);
@@ -129,6 +130,7 @@ static int green_teed_register_interrupt_handler(){
 uintptr_t green_teed_smc_handler(uint32_t smc_fid, u_register_t x1, u_register_t x2, u_register_t x3, u_register_t x4, void* cookie, void* handle, u_register_t flags){
 
 	// x1: address of exception vector table passed by S-EL1
+	// x2: address of SMC handler inside TEE
 
 	green_tee_cpu_context_t* cpu_context = &cpu_context_data;
 
@@ -146,7 +148,7 @@ uintptr_t green_teed_smc_handler(uint32_t smc_fid, u_register_t x1, u_register_t
 			case GREEN_TEE_SMC_LINUX_PRINT:
 				
 				cm_el1_sysregs_context_save(NON_SECURE);
-				cm_set_elr_el3(SECURE, vector_table.current_el_spx_sync);
+				cm_set_elr_el3(SECURE, green_tee_smc_handler);
 
 				cm_el1_sysregs_context_restore(SECURE);
 				cm_set_next_eret_context(SECURE);
@@ -167,11 +169,29 @@ uintptr_t green_teed_smc_handler(uint32_t smc_fid, u_register_t x1, u_register_t
 				if(x1 == 0) panic();	// S-EL1 has to return its VBAR_EL1. Otherwise, something has gone wrong...
 
 				green_tee_init_vector_table(x1);
+				green_tee_smc_handler = x2;
 
 				int ret = green_teed_register_interrupt_handler();
 				if(ret < 0) panic();
 
 				green_teed_synchronous_sp_exit(cpu_context);
+				break;
+			case GREEN_TEE_SMC_HANDLED:
+
+				cm_el1_sysregs_context_save(SECURE);
+				cm_el1_sysregs_context_restore(NON_SECURE);
+				cm_set_next_eret_context(NON_SECURE);
+
+				SMC_RET4(cm_get_context(NON_SECURE), 0, 0, 0, 0);
+
+				break;
+
+			case GREEN_TEE_SMC_FAILED:
+				cm_el1_sysregs_context_save(SECURE);
+				cm_el1_sysregs_context_restore(NON_SECURE);
+				cm_set_next_eret_context(NON_SECURE);
+
+				SMC_RET4(cm_get_context(NON_SECURE), 1, 1, 1, 1);
 				break;
 
 			default:

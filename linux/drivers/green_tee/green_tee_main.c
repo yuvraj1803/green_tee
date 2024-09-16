@@ -9,6 +9,8 @@
 #include <linux/miscdevice.h>
 #include <linux/slab.h>
 
+#include <asm/io.h>
+
 static int green_tee_dev_initialised = 0;
 
 static long green_tee_ioctl(struct file* file, unsigned int ioctl, unsigned long arg){
@@ -23,14 +25,10 @@ static long green_tee_ioctl(struct file* file, unsigned int ioctl, unsigned long
             return -EFAULT;
         }
 
-        char* __str = (char*) kzalloc(print_data.len, GFP_KERNEL);
-        if(!__str){
-            return -ENOMEM;
-        }
+        char* __str = kzalloc(print_data.len, GFP_KERNEL);
+        if(!__str) return -ENOMEM;
 
-        if(copy_from_user(__str, print_data.str, print_data.len)){
-            return -EPERM;
-        }
+        strncpy_from_user(__str, print_data.str, print_data.len);
 
         print_data.str = __str;
 
