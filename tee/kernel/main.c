@@ -11,7 +11,7 @@ void main(void){
 
 	pl011_init();
 	mm_heap_init();	
-	mmu_init();
+	// mmu_init();
 	generic_timer_init();
 
 	green_tee_smc_entry_done();	// notify trusted secure payload
