@@ -32,10 +32,15 @@ int64_t mm_find_free_page_block(uint64_t size){
 	if(num_pages > (MM_HEAP_END - MM_HEAP_BEGIN)/PAGE_SIZE) return -EMALLOC; // requested memory exceeds heap size
 
 	for(int page=0; page < heap_size_pages; ){
+		
+		if(page >= heap_size_pages) return -EMALLOC;
 
 		int block_found = 1;
 
 		for(int _page = page; _page < page + num_pages; _page++){
+			
+			if(_page >= heap_size_pages) return -EMALLOC;
+
 			if(heap_metadata[_page] != MM_HEAP_PAGE_FREE){
 				page = _page+1;
 				block_found = 0;
@@ -44,6 +49,9 @@ int64_t mm_find_free_page_block(uint64_t size){
 		}
 		if(block_found){
 			for(int _page = page; _page < page + num_pages; _page++) {
+				
+				if(_page >= heap_size_pages) return -EMALLOC;
+
 				if(_page == page) heap_metadata[_page] = MM_HEAP_PAGE_FIRST | MM_HEAP_PAGE_TAKEN;
 				else if(_page == page + num_pages - 1) heap_metadata[_page] = MM_HEAP_PAGE_TAKEN;
 				else{
@@ -61,7 +69,7 @@ int64_t mm_find_free_page_block(uint64_t size){
 
 void* malloc(uint64_t size){
 	
-	size = size + (PAGE_SIZE - size % PAGE_SIZE); // align given size to PAGE_SIZE
+	if(size & (PAGE_SIZE-1)) size = size + (PAGE_SIZE - size % PAGE_SIZE); // align given size to PAGE_SIZE
 	
 	int64_t free_page_block = mm_find_free_page_block(size);
 	if(free_page_block == -EMALLOC) goto malloc_fail;
