@@ -1,6 +1,10 @@
 ENTRY(_start)
 
 SECTIONS{
+	
+	. = 0xe000000;
+	__secure_mem_begin = .;
+
 	. = 0xe100000;
 	__tee_begin = .;	
 	__tee_asm_text_begin = .;
@@ -37,4 +41,5 @@ SECTIONS{
 
 	__tee_stack_base = __tee_limit;
 	__tee_limit = 0xf000000;
+	__secure_mem_end = 0xf000000;
 }
