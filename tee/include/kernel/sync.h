@@ -5,5 +5,6 @@
 #include <kernel/exceptions.h>
 
 void handle_sync(uint64_t esr_el1, uint64_t far_el1, uint64_t exception_type);
+void __handle_unsupported_exception(uint64_t esr_el1, uint64_t far_el1, uint64_t exception_type);
 
 #endif

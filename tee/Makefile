@@ -13,7 +13,6 @@ OBJ += ./build/boot/boot.S.o
 OBJ += ./build/kernel/main.o
 OBJ += ./build/kernel/panic.o
 OBJ += ./build/kernel/exceptions.S.o
-OBJ += ./build/kernel/exceptions.o
 OBJ += ./build/kernel/sync.o
 OBJ += ./build/kernel/async.o
 OBJ += ./build/kernel/entry.S.o

@@ -69,13 +69,13 @@ current_el_sp0_serror:
     handle_unsupported_exception CURRENT_EL_SP0_SERROR
 
 current_el_spx_sync:
-    handle_sync_exception CURRENT_EL_SPX_SYNC
+    handle_unsupported_exception CURRENT_EL_SPX_SYNC
 current_el_spx_irq:
     handle_async_exception CURRENT_EL_SPX_IRQ
 current_el_spx_fiq:
     handle_async_exception CURRENT_EL_SPX_FIQ
 current_el_spx_serror:
-    handle_sync_exception CURRENT_EL_SPX_SERROR
+    handle_unsupported_exception CURRENT_EL_SPX_SERROR
 
 lower_el_64_sync:
     handle_sync_exception LOWER_EL_64_SYNC
