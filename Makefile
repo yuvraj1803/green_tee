@@ -81,7 +81,7 @@ client: linux
 	cd client && make
 	sudo sh mount_client.sh
 clean_client:
-	cd client && clean
+	cd client && make clean
 	sudo sh clean_client.sh
 # Run
 QEMU_ARGS ?= \
