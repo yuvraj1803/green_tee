@@ -67,7 +67,7 @@ LINUX_FLAGS ?= \
 	       -j$(NPROC)
 
 .PHONY: linux
-linux: client buildroot
+linux: buildroot
 	cp configs/linux_config linux/.config
 	cd linux && make $(LINUX_FLAGS) Image
 	cp buildroot/output/images/rootfs.ext4 linux/
@@ -77,7 +77,7 @@ clean_linux:
 
 # Client
 .PHONY: client
-client:
+client: linux
 	cd client && make
 	sudo sh mount_client.sh
 clean_client:
