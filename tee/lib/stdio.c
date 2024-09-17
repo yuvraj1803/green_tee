@@ -10,10 +10,10 @@ void printf(char* fmt, ...){
 		if(*p != '%'){
 			pl011_putc(*p);
 		}else{
-			int val;
+			unsigned long long val;
 			switch(*++p){
 				case 'x':
-					val = va_arg(ap, int);
+					val = va_arg(ap, unsigned long long);
 					pl011_write_hex(val);
 					break;
 				case 's':
@@ -45,10 +45,10 @@ void LOG(char* fmt, ...){
                 if(*p != '%'){
                         pl011_putc(*p);
                 }else{
-                        int val;
+                        unsigned long long val;
                         switch(*++p){
                                 case 'x':
-                                        val = va_arg(ap, int);
+                                        val = va_arg(ap, unsigned long long);
                                         pl011_write_hex(val);
                                         break;
                                 case 's':
