@@ -31,6 +31,8 @@ OBJ += ./build/lib/stdio.o
 OBJ += ./build/lib/string.o
 OBJ += ./build/lib/stdlib.o
 OBJ += ./build/lib/memory.o
+OBJ += ./build/crypto/otp.o
+OBJ += ./build/crypto/otp.S.o
 
 all: build_setup tee.elf
 
@@ -47,6 +49,14 @@ build_setup:
 	$(CC) $(CFLAGS) -c $< -o $@
 
 ./build/kernel/%.S.o: ./kernel/%.S
+	@echo CC $<
+	$(CC) $(ASMFLAGS) -c $< -o $@
+
+./build/crypto/%.o: ./crypto/%.c
+	@echo CC $<
+	$(CC) $(CFLAGS) -c $< -o $@
+
+./build/crypto/%.S.o: ./crypto/%.S
 	@echo CC $<
 	$(CC) $(ASMFLAGS) -c $< -o $@
 
