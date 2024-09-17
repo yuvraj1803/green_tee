@@ -33,7 +33,7 @@ int mmu_map_page(uint64_t virt, uint64_t phys, uint64_t flags){
 
     int l1_index = (virt >> 30) & (512 - 1);
     int l2_index = (virt >> 21) & (512 - 1);
-
+    int l3_index = (virt >> 12) & (512 - 1);
 
     if(!l1_table) l1_table = malloc(PAGE_SIZE);
     if(!l1_table) goto no_mem;
@@ -48,7 +48,17 @@ int mmu_map_page(uint64_t virt, uint64_t phys, uint64_t flags){
 
 
     uint64_t* l2_table = (uint64_t*) (l1_table[l1_index] & ~(PAGE_SIZE - 1));
-    if(!l2_table[l2_index]) l2_table[l2_index] = (phys | flags | PT_BLOCK);
+    if(!l2_table[l2_index]){
+        l2_table[l2_index] = (uint64_t) malloc(PAGE_SIZE);
+
+        if(!l2_table[l2_index]) goto no_mem;
+
+        l2_table[l2_index] |= PT_TABLE;
+    }
+
+    uint64_t* l3_table = (uint64_t*) (l2_table[l2_index] & ~(PAGE_SIZE - 1));
+    l3_table[l3_index] = (phys | flags | PT_TABLE);
+
 
     return 0;
 no_mem:
@@ -104,10 +114,10 @@ void mmu_init(void){
     int ret = 0;
 
     // asm code
-    ret = mmu_map_range((uint64_t)&__tee_asm_text_begin,(uint64_t)&__tee_asm_text_begin,(uint64_t) &__tee_asm_text_end, PT_ATTR1_NORMAL | PT_SECURE | PT_AP_UNPRIVILEGED_NA_PRIVILEGED_RO | PT_UXN | PT_AF);
+    ret = mmu_map_range((uint64_t)&__tee_asm_text_begin,(uint64_t)&__tee_asm_text_begin,(uint64_t) &__tee_asm_text_end, PT_ATTR1_NORMAL | PT_SECURE | PT_AP_UNPRIVILEGED_NA_PRIVILEGED_RW  | PT_AF);
 
     // code
-    ret = mmu_map_range((uint64_t)&__tee_text_begin, (uint64_t)&__tee_text_begin, (uint64_t)&__tee_text_end, PT_ATTR1_NORMAL | PT_SECURE | PT_AP_UNPRIVILEGED_NA_PRIVILEGED_RO | PT_UXN | PT_AF);
+    ret = mmu_map_range((uint64_t)&__tee_text_begin, (uint64_t)&__tee_text_begin, (uint64_t)&__tee_text_end, PT_ATTR1_NORMAL | PT_SECURE | PT_AP_UNPRIVILEGED_NA_PRIVILEGED_RW  | PT_AF);
 
     //data
     ret = mmu_map_range((uint64_t)&__tee_data_begin, (uint64_t)&__tee_data_begin, (uint64_t)&__tee_data_end, PT_ATTR1_NORMAL | PT_SECURE | PT_AP_UNPRIVILEGED_NA_PRIVILEGED_RW | PT_UXN | PT_PXN | PT_AF);
