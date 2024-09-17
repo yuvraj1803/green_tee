@@ -17,12 +17,14 @@ void otp_init(){
 
 void otp_enc_buffer(uint64_t* buff, uint64_t size){
 	for(int i = 0; i < size; i++){
-		buff[i] ^= otp_key;
+		if(buff[i]) buff[i] ^= otp_key;
 	}
+	LOG("OTP: Encrypted 4-KB Buffer at %x\n", (uint64_t)buff);
 }
 
 void otp_dec_buffer(uint64_t* buff, uint64_t size){
 	for(int i = 0; i < size; i++){
-		buff[i] ^= otp_key;
+		if(buff[i]) buff[i] ^= otp_key;
 	}
+	LOG("OTP: Decrypted 4-KB Buffer at %x\n", (uint64_t)buff);
 }
