@@ -25,6 +25,8 @@ The userspace client can use ioctl() to issue requests to the Linux Kernel which
 ## Building
 `chmod +x ./install.sh`
 
+`./install.sh`
+
 `make`
 
 ## Running
