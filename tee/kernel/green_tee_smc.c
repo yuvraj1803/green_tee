@@ -5,6 +5,7 @@
 #include <smc/smccc.h>
 #include <mm/mmu.h>
 #include <mm/mm.h>
+#include <crypto/otp.h>
 
 extern uint64_t vector_table;
 extern uint64_t __green_tee_smc_handler;
@@ -54,12 +55,41 @@ void green_tee_smc_handler(uint64_t smc_fid, uint64_t x1, uint64_t x2, uint64_t 
 
 			ret = mmu_map_range(x1 & ~(PAGE_SIZE-1), x1 & ~(PAGE_SIZE - 1), x1 + (PAGE_SIZE - x1%PAGE_SIZE), PT_ATTR1_NORMAL | PT_SECURE | PT_AP_UNPRIVILEGED_NA_PRIVILEGED_RW | PT_UXN | PT_PXN | PT_AF);
 			if(ret < 0){
-				LOG("GREEN_TEE_LINUX_PRINT Failed\n", smc_fid);
+				LOG("GREEN_TEE_LINUX_PRINT Failed\n");
 				goto green_tee_smc_fail;
 			}
 
 			char* str = (char*) x1;
-			printf("%s\n", str);
+			printf("String from NS-EL0: %s\n", str);
+
+			break;
+
+		case GREEN_TEE_SMC_LINUX_ENCRYPT:
+			// x1: base address of 4096 byte block sent from NS-EL0
+
+			ret = mmu_map_range(x1 & ~(PAGE_SIZE-1), x1 & ~(PAGE_SIZE - 1), x1 + (PAGE_SIZE - x1%PAGE_SIZE), PT_ATTR1_NORMAL | PT_SECURE | PT_AP_UNPRIVILEGED_NA_PRIVILEGED_RW | PT_UXN | PT_PXN | PT_AF);
+			if(ret < 0){
+				LOG("GREEN_TEE_LINUX_ENCRYPT Failed\n");
+				goto green_tee_smc_fail;
+			}
+
+			str = (char*) x1;
+			otp_enc_buffer((uint64_t*) str, 4096);
+
+			break;
+		
+		case GREEN_TEE_SMC_LINUX_DECRYPT:
+
+			// x1: base address of 4096 byte block sent from NS-EL0
+
+			ret = mmu_map_range(x1 & ~(PAGE_SIZE-1), x1 & ~(PAGE_SIZE - 1), x1 + (PAGE_SIZE - x1%PAGE_SIZE), PT_ATTR1_NORMAL | PT_SECURE | PT_AP_UNPRIVILEGED_NA_PRIVILEGED_RW | PT_UXN | PT_PXN | PT_AF);
+			if(ret < 0){
+				LOG("GREEN_TEE_LINUX_DECRYPT Failed\n");
+				goto green_tee_smc_fail;
+			}
+
+			str = (char*) x1;
+			otp_dec_buffer((uint64_t*) str, 4096);
 
 			break;
 

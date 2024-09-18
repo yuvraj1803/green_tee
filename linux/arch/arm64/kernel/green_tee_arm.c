@@ -22,6 +22,27 @@ int green_tee_arch_print_data(struct green_tee_print_data* print_data){
 
 }
 
+int green_tee_arch_encrypt_data(char* buff){
+    struct arm_smccc_res res;
+    arm_smccc_1_1_smc(ARM_SMCCC_CALL_VAL(ARM_SMCCC_STD_CALL, ARM_SMCCC_SMC_64, ARM_SMCCC_OWNER_TRUSTED_OS, GREEN_TEE_SMC_LINUX_ENCRYPT)
+    ,virt_to_phys(buff),0,0,0,0,0,0, &res);
+
+    if(res.a0 != 0) return -EPERM;
+
+    return 0;
+
+}
+
+int green_tee_arch_decrypt_data(char* buff){
+    struct arm_smccc_res res;
+    arm_smccc_1_1_smc(ARM_SMCCC_CALL_VAL(ARM_SMCCC_STD_CALL, ARM_SMCCC_SMC_64, ARM_SMCCC_OWNER_TRUSTED_OS, GREEN_TEE_SMC_LINUX_DECRYPT)
+    ,virt_to_phys(buff),0,0,0,0,0,0, &res);
+
+    if(res.a0 != 0) return -EPERM;
+
+    return 0;
+}
+
 int green_tee_arch_init(void){
 
     struct arm_smccc_res res;

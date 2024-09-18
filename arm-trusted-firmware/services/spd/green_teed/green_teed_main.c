@@ -146,7 +146,9 @@ uintptr_t green_teed_smc_handler(uint32_t smc_fid, u_register_t x1, u_register_t
 				INFO("Green TEED contact from non-secure world established.\n");
 				break;
 			case GREEN_TEE_SMC_LINUX_PRINT:
-				
+			case GREEN_TEE_SMC_LINUX_ENCRYPT:
+			case GREEN_TEE_SMC_LINUX_DECRYPT:
+
 				cm_el1_sysregs_context_save(NON_SECURE);
 				cm_set_elr_el3(SECURE, green_tee_smc_handler);
 

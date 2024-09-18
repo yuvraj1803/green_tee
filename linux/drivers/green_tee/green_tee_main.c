@@ -22,7 +22,7 @@ static long green_tee_ioctl(struct file* file, unsigned int ioctl, unsigned long
         struct green_tee_print_data print_data;
 
         if(copy_from_user(&print_data, (void*) arg, sizeof(struct green_tee_print_data))){
-            return -EFAULT;
+            return -EPERM;
         }
 
         char* __str = kzalloc(print_data.len, GFP_KERNEL);
@@ -33,10 +33,53 @@ static long green_tee_ioctl(struct file* file, unsigned int ioctl, unsigned long
         print_data.str = __str;
 
         if(green_tee_arch_print_data(&print_data)){
+            kfree(__str);
             return -EPERM;
         }
 
         break;  
+    case GREEN_TEE_ENCRYPT:
+
+        char* buff = (char*) kzalloc(4096, GFP_KERNEL);
+        if(!buff){
+            return -ENOMEM;
+        }
+
+        strncpy_from_user(buff, (char*) arg, 4096);
+
+        if(green_tee_arch_encrypt_data(buff)){
+            return -EPERM;
+        }
+
+        if(copy_to_user((void*)arg, (void*)buff, 4096)){
+            kfree(buff);
+            return -EPERM;
+        }
+
+        kfree(buff);
+
+        break;
+    case GREEN_TEE_DECRYPT:
+
+        buff = (char*) kzalloc(4096, GFP_KERNEL);
+        if(!buff){
+            return -ENOMEM;
+        }
+
+        strncpy_from_user(buff, (char*) arg, 4096);
+
+        if(green_tee_arch_decrypt_data(buff)){
+            return -EPERM;
+        }
+
+        if(copy_to_user((void*)arg, (void*)buff, 4096)){
+            kfree(buff);
+            return -EPERM;
+        }
+
+        kfree(buff);
+
+        break;
 
     default:
         return -EINVAL;
