@@ -66,7 +66,7 @@ void green_tee_smc_handler(uint64_t smc_fid, uint64_t x1, uint64_t x2, uint64_t 
 
 		case GREEN_TEE_SMC_LINUX_ENCRYPT:
 			// x1: base address of 4096 byte block sent from NS-EL0
-
+			mmu_disable();
 			ret = mmu_map_range(x1 & ~(PAGE_SIZE-1), x1 & ~(PAGE_SIZE - 1), x1 + (PAGE_SIZE - x1%PAGE_SIZE), PT_ATTR1_NORMAL | PT_SECURE | PT_AP_UNPRIVILEGED_NA_PRIVILEGED_RW | PT_UXN | PT_PXN | PT_AF);
 			if(ret < 0){
 				LOG("GREEN_TEE_LINUX_ENCRYPT Failed\n");
@@ -76,21 +76,24 @@ void green_tee_smc_handler(uint64_t smc_fid, uint64_t x1, uint64_t x2, uint64_t 
 			str = (char*) x1;
 			otp_enc_buffer((uint64_t*) str, 4096);
 
+			mmu_enable();
+
 			break;
 		
 		case GREEN_TEE_SMC_LINUX_DECRYPT:
 
 			// x1: base address of 4096 byte block sent from NS-EL0
 
+			mmu_disable();
 			ret = mmu_map_range(x1 & ~(PAGE_SIZE-1), x1 & ~(PAGE_SIZE - 1), x1 + (PAGE_SIZE - x1%PAGE_SIZE), PT_ATTR1_NORMAL | PT_SECURE | PT_AP_UNPRIVILEGED_NA_PRIVILEGED_RW | PT_UXN | PT_PXN | PT_AF);
 			if(ret < 0){
 				LOG("GREEN_TEE_LINUX_DECRYPT Failed\n");
 				goto green_tee_smc_fail;
 			}
-
+			mmu_invalidate_tlb();
 			str = (char*) x1;
 			otp_dec_buffer((uint64_t*) str, 4096);
-
+			mmu_enable();
 			break;
 
 		default:

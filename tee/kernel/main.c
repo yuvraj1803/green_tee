@@ -11,7 +11,7 @@ void main(void){
 	
 	mm_heap_init();
 	pl011_init();
-	// mmu_init();
+	mmu_init();
 	generic_timer_init();
 	otp_init();
 
