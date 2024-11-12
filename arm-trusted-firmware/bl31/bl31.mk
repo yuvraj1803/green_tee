@@ -42,10 +42,12 @@ BL31_SOURCES		+=	bl31/bl31_main.c				\
 				bl31/bl31_context_mgmt.c			\
 				bl31/bl31_traps.c				\
 				common/runtime_svc.c				\
+				lib/cpus/errata_common.c			\
 				lib/cpus/aarch64/dsu_helpers.S			\
 				plat/common/aarch64/platform_mp_stack.S		\
 				services/arm_arch_svc/arm_arch_svc_setup.c	\
 				services/std_svc/std_svc_setup.c		\
+				lib/el3_runtime/simd_ctx.c			\
 				${PSCI_LIB_SOURCES}				\
 				${SPMD_SOURCES}					\
 				${SPM_MM_SOURCES}				\
@@ -107,6 +109,10 @@ endif
 
 ifneq (${ENABLE_FEAT_FGT2},0)
 BL31_SOURCES		+=	lib/extensions/fgt/fgt2.c
+endif
+
+ifneq (${ENABLE_FEAT_TCR2},0)
+BL31_SOURCES		+=	lib/extensions/tcr/tcr2.c
 endif
 
 ifeq (${ENABLE_MPMM},1)

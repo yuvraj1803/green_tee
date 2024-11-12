@@ -268,6 +268,7 @@ enum pm_ret_status pm_self_suspend(enum pm_node_id nid,
 				   uint32_t state,
 				   uintptr_t address)
 {
+	(void)nid;
 	uint32_t payload[PAYLOAD_ARG_CNT];
 	uint32_t cpuid = plat_my_core_pos();
 	const struct pm_proc *proc = pm_get_proc(cpuid);
@@ -768,7 +769,7 @@ static enum pm_ret_status fw_api_version(uint32_t id, uint32_t *version,
 enum pm_ret_status check_api_dependency(uint8_t id)
 {
 	uint8_t i;
-	uint32_t version;
+	uint32_t version_type;
 	int ret;
 
 	for (i = 0U; i < ARRAY_SIZE(api_dep_table); i++) {
@@ -778,13 +779,13 @@ enum pm_ret_status check_api_dependency(uint8_t id)
 			}
 
 			ret = fw_api_version(api_dep_table[i].api_id,
-					     &version, 1);
+					     &version_type, 1);
 			if (ret != PM_RET_SUCCESS) {
 				return ret;
 			}
 
 			/* Check if fw version matches TF-A expected version */
-			if (version != tfa_expected_ver_id[api_dep_table[i].api_id]) {
+			if (version_type != tfa_expected_ver_id[api_dep_table[i].api_id]) {
 				return PM_RET_ERROR_NOTSUPPORTED;
 			}
 		}
@@ -919,7 +920,7 @@ static enum pm_ret_status feature_check_partial(uint32_t api_id,
 enum pm_ret_status pm_feature_check(uint32_t api_id, uint32_t *version,
 				    uint32_t *bit_mask, uint8_t len)
 {
-	uint32_t ret_payload[PAYLOAD_ARG_CNT] = {0U};
+	uint32_t ret_payload[RET_PAYLOAD_ARG_CNT] = {0U};
 	uint32_t status;
 
 	/* Get API version implemented in TF-A */
@@ -1114,7 +1115,7 @@ static enum pm_ret_status pm_clock_gate(uint32_t clock_id,
 		return status;
 	}
 
-	if (enable) {
+	if (enable != 0U) {
 		api_id = PM_CLOCK_ENABLE;
 	} else {
 		api_id = PM_CLOCK_DISABLE;
@@ -1149,7 +1150,7 @@ enum pm_ret_status pm_clock_enable(uint32_t clock_id)
 
 	/* First try to handle it as a PLL */
 	pll = pm_clock_get_pll(clock_id);
-	if (pll) {
+	if (pll != NULL) {
 		return pm_clock_pll_enable(pll);
 	}
 
@@ -1174,7 +1175,7 @@ enum pm_ret_status pm_clock_disable(uint32_t clock_id)
 
 	/* First try to handle it as a PLL */
 	pll = pm_clock_get_pll(clock_id);
-	if (pll) {
+	if (pll != NULL) {
 		return pm_clock_pll_disable(pll);
 	}
 
@@ -1202,9 +1203,9 @@ enum pm_ret_status pm_clock_getstate(uint32_t clock_id,
 
 	/* First try to handle it as a PLL */
 	pll = pm_clock_get_pll(clock_id);
-	if (pll)
+	if (pll != NULL) {
 		return pm_clock_pll_get_state(pll, state);
-
+	}
 	/* Check if clock ID is a valid on-chip clock */
 	status = pm_clock_id_is_valid(clock_id);
 	if (status != PM_RET_SUCCESS) {
@@ -1296,7 +1297,7 @@ enum pm_ret_status pm_clock_getdivider(uint32_t clock_id,
 		return status;
 	}
 
-	if (pm_clock_has_div(clock_id, PM_CLOCK_DIV0_ID)) {
+	if ((pm_clock_has_div(clock_id, PM_CLOCK_DIV0_ID)) != 0U) {
 		/* Send request to the PMU to get div0 */
 		PM_PACK_PAYLOAD3(payload, PM_CLOCK_GETDIVIDER, clock_id,
 				 PM_CLOCK_DIV0_ID);
@@ -1307,7 +1308,7 @@ enum pm_ret_status pm_clock_getdivider(uint32_t clock_id,
 		*divider = val;
 	}
 
-	if (pm_clock_has_div(clock_id, PM_CLOCK_DIV1_ID)) {
+	if ((pm_clock_has_div(clock_id, PM_CLOCK_DIV1_ID)) != 0U) {
 		/* Send request to the PMU to get div1 */
 		PM_PACK_PAYLOAD3(payload, PM_CLOCK_GETDIVIDER, clock_id,
 				 PM_CLOCK_DIV1_ID);
@@ -1340,7 +1341,7 @@ enum pm_ret_status pm_clock_setparent(uint32_t clock_id,
 
 	/* First try to handle it as a PLL */
 	pll = pm_clock_get_pll_by_related_clk(clock_id);
-	if (pll) {
+	if (pll != NULL) {
 		return pm_clock_pll_set_parent(pll, clock_id, parent_index);
 	}
 
@@ -1375,7 +1376,7 @@ enum pm_ret_status pm_clock_getparent(uint32_t clock_id,
 
 	/* First try to handle it as a PLL */
 	pll = pm_clock_get_pll_by_related_clk(clock_id);
-	if (pll) {
+	if (pll != NULL) {
 		return pm_clock_pll_get_parent(pll, clock_id, parent_index);
 	}
 
@@ -1514,6 +1515,7 @@ static enum pm_ret_status pm_pinctrl_get_pin_groups(uint32_t pin_id,
 void pm_query_data(enum pm_query_ids qid, uint32_t arg1, uint32_t arg2,
 		   uint32_t arg3, uint32_t *data)
 {
+	(void)arg3;
 	switch (qid) {
 	case PM_QID_CLOCK_GET_NAME:
 		pm_clock_get_name(arg1, (char *)data);
@@ -1655,7 +1657,7 @@ enum pm_ret_status pm_pll_set_parameter(enum pm_node_id nid,
 	uint32_t payload[PAYLOAD_ARG_CNT];
 
 	/* Check if given node ID is a PLL node */
-	if (nid < NODE_APLL || nid > NODE_IOPLL) {
+	if ((nid < NODE_APLL) || (nid > NODE_IOPLL)) {
 		return PM_RET_ERROR_ARGS;
 	}
 
@@ -1686,7 +1688,7 @@ enum pm_ret_status pm_pll_get_parameter(enum pm_node_id nid,
 	uint32_t payload[PAYLOAD_ARG_CNT];
 
 	/* Check if given node ID is a PLL node */
-	if (nid < NODE_APLL || nid > NODE_IOPLL) {
+	if ((nid < NODE_APLL) || (nid > NODE_IOPLL)) {
 		return PM_RET_ERROR_ARGS;
 	}
 
@@ -1719,7 +1721,7 @@ enum pm_ret_status pm_pll_set_mode(enum pm_node_id nid, enum pm_pll_mode mode)
 	uint32_t payload[PAYLOAD_ARG_CNT];
 
 	/* Check if given node ID is a PLL node */
-	if (nid < NODE_APLL || nid > NODE_IOPLL) {
+	if ((nid < NODE_APLL) || (nid > NODE_IOPLL)) {
 		return PM_RET_ERROR_ARGS;
 	}
 
@@ -1747,7 +1749,7 @@ enum pm_ret_status pm_pll_get_mode(enum pm_node_id nid, enum pm_pll_mode *mode)
 	uint32_t payload[PAYLOAD_ARG_CNT];
 
 	/* Check if given node ID is a PLL node */
-	if (nid < NODE_APLL || nid > NODE_IOPLL) {
+	if ((nid < NODE_APLL) || (nid > NODE_IOPLL)) {
 		return PM_RET_ERROR_ARGS;
 	}
 

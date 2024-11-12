@@ -1,5 +1,5 @@
 # Copyright (c) 2018-2021, Arm Limited and Contributors. All rights reserved.
-# Copyright (c) 2022-2023, Advanced Micro Devices, Inc. All rights reserved.
+# Copyright (c) 2022-2024, Advanced Micro Devices, Inc. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -22,7 +22,7 @@ ifdef VERSAL_ATF_MEM_BASE
     $(eval $(call add_define,VERSAL_ATF_MEM_BASE))
 
     ifndef VERSAL_ATF_MEM_SIZE
-        $(error "VERSAL_ATF_BASE defined without VERSAL_ATF_SIZE")
+        $(error "VERSAL_ATF_MEM_BASE defined without VERSAL_ATF_MEM_SIZE")
     endif
     $(eval $(call add_define,VERSAL_ATF_MEM_SIZE))
 
@@ -35,7 +35,7 @@ ifdef VERSAL_BL32_MEM_BASE
     $(eval $(call add_define,VERSAL_BL32_MEM_BASE))
 
     ifndef VERSAL_BL32_MEM_SIZE
-        $(error "VERSAL_BL32_BASE defined without VERSAL_BL32_SIZE")
+        $(error "VERSAL_BL32_MEM_BASE defined without VERSAL_BL32_MEM_SIZE")
     endif
     $(eval $(call add_define,VERSAL_BL32_MEM_SIZE))
 endif
@@ -44,8 +44,9 @@ ifdef IPI_CRC_CHECK
     $(eval $(call add_define,IPI_CRC_CHECK))
 endif
 
-VERSAL_PLATFORM ?= silicon
-$(eval $(call add_define_val,VERSAL_PLATFORM,VERSAL_PLATFORM_ID_${VERSAL_PLATFORM}))
+ifdef VERSAL_PLATFORM
+    $(warning "VERSAL_PLATFORM has been deprecated")
+endif
 
 ifdef XILINX_OF_BOARD_DTB_ADDR
 $(eval $(call add_define,XILINX_OF_BOARD_DTB_ADDR))
@@ -84,12 +85,26 @@ PLAT_BL_COMMON_SOURCES	:= 	drivers/arm/dcc/dcc_console.c			\
 				${XLAT_TABLES_LIB_SRCS}
 
 VERSAL_CONSOLE	?=	pl011
-ifeq (${VERSAL_CONSOLE}, $(filter ${VERSAL_CONSOLE},pl011 pl011_0 pl011_1 dcc))
+ifeq (${VERSAL_CONSOLE}, $(filter ${VERSAL_CONSOLE},pl011 pl011_0 pl011_1 dcc dtb none))
 else
   $(error "Please define VERSAL_CONSOLE")
 endif
 
 $(eval $(call add_define_val,VERSAL_CONSOLE,VERSAL_CONSOLE_ID_${VERSAL_CONSOLE}))
+
+# Runtime console in default console in DEBUG build
+ifeq ($(DEBUG), 1)
+CONSOLE_RUNTIME ?= pl011
+endif
+
+# Runtime console
+ifdef CONSOLE_RUNTIME
+ifeq (${CONSOLE_RUNTIME}, $(filter ${CONSOLE_RUNTIME},pl011 pl011_0 pl011_1 dcc dtb))
+$(eval $(call add_define_val,CONSOLE_RUNTIME,RT_CONSOLE_ID_${CONSOLE_RUNTIME}))
+else
+$(error "Please define CONSOLE_RUNTIME")
+endif
+endif
 
 BL31_SOURCES		+=	drivers/arm/cci/cci.c				\
 				lib/cpus/aarch64/cortex_a72.S			\

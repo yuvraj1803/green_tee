@@ -49,12 +49,14 @@ Maintainers
 :|G|: `laurenw-arm`_
 :|M|: Madhukar Pappireddy <Madhukar.Pappireddy@arm.com>
 :|G|: `madhukar-Arm`_
-:|M|: Raghu Krishnamurthy <raghu.ncstate@icloud.com>
+:|M|: Raghu Krishnamurthy <raghuoss@raghushome.com>
 :|G|: `raghuncstate`_
 :|M|: Manish Badarkhe <manish.badarkhe@arm.com>
 :|G|: `ManishVB-Arm`_
 :|M|: Yann Gautier <yann.gautier@st.com>
 :|G|: `Yann-lms`_
+:|M|: Govindraj Raja <govindraj.raja@arm.com>
+:|G|: `govindraj-arm`_
 
 LTS Maintainers
 ---------------
@@ -565,8 +567,8 @@ Arm Rich IoT Platform ports
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 :|M|: Abdellatif El Khlifi <abdellatif.elkhlifi@arm.com>
 :|G|: `abdellatif-elkhlifi`_
-:|M|: Xueliang Zhong <xueliang.zhong@arm.com>
-:|G|: `xueliang-zhong-arm`_
+:|M|: Hugues Kamba Mpiana <hugues.kambampiana@arm.com>
+:|G|: `hugues-kambampiana-arm`_
 :|F|: plat/arm/board/corstone700
 :|F|: plat/arm/board/a5ds
 :|F|: plat/arm/board/corstone1000
@@ -593,6 +595,16 @@ Arm Total Compute platform port
 :|M|: Rupinderjit Singh <rupinderjit.singh@arm.com>
 :|G|: `rupsin01`_
 :|F|: plat/arm/board/tc
+
+Arm Automotive RD platform port
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+:|M|: Diego Sueiro <diego.sueiro@arm.com>
+:|G|: `diego-sueiro`_
+:|M|: Peter Hoyes <peter.hoyes@arm.com>
+:|G|: `hoyes`_
+:|M|: Divin Raj <divin.raj@arm.com>
+:|G|: `divin-raj`_
+:|F|: plat/arm/board/automotive_rd
 
 Aspeed platform port
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -858,8 +870,6 @@ RockChip platform port
 :|G|: `rockchip-linux`_
 :|M|: Heiko Stuebner <heiko@sntech.de>
 :|G|: `mmind`_
-:|M|: Julius Werner <jwerner@chromium.org>
-:|G|: `jwerner-chromium`_
 :|F|: plat/rockchip/
 
 STMicroelectronics platform ports
@@ -1008,7 +1018,7 @@ Threat Model
 :|G|: `sandrine-bailleux-arm`_
 :|M|: Joanna Farley <joanna.farley@arm.com>
 :|G|: `joannafarley-arm`_
-:|M|: Raghu Krishnamurthy <raghu.ncstate@icloud.com>
+:|M|: Raghu Krishnamurthy <raghuoss@raghushome.com>
 :|G|: `raghuncstate`_
 :|M|: Varun Wadekar <vwadekar@nvidia.com>
 :|G|: `vwadekar`_
@@ -1043,13 +1053,18 @@ Conventional Changelog Extensions
 .. _CJKay: https://github.com/cjkay
 .. _danh-arm: https://github.com/danh-arm
 .. _davidvincze: https://github.com/davidvincze
+.. _diego-sueiro: https://github.com/diego-sueiro
+.. _divin-raj: https://github.com/divin-raj
 .. _etienne-lms: https://github.com/etienne-lms
 .. _glneo: https://github.com/glneo
+.. _govindraj-arm: https://github.com/govindraj-arm
 .. _gprocopciucnxp: https://github.com/gprocopciucnxp
 .. _grandpaul: https://github.com/grandpaul
 .. _harrisonmutai-arm: https://github.com/harrisonmutai-arm
 .. _hilamirandakuzi1: https://github.com/hilamirandakuzi1
+.. _hoyes: https://github.com/hoyes
 .. _hzhuang1: https://github.com/hzhuang1
+.. _hugues-kambampiana-arm: https://github.com/hugueskamba
 .. _JackyBai: https://github.com/JackyBai
 .. _J-Alves: https://github.com/J-Alves
 .. _jason-ch-chen: https://github.com/jason-ch-chen
@@ -1112,7 +1127,6 @@ Conventional Changelog Extensions
 .. _vijayenthiran-arm: https://github.com/vijayenthiran-arm
 .. _vishnu-banavath: https://github.com/vishnu-banavath
 .. _vwadekar: https://github.com/vwadekar
-.. _xueliang-zhong-arm: https://github.com/xueliang-zhong-arm
 .. _Yann-lms: https://github.com/Yann-lms
 
 --------------

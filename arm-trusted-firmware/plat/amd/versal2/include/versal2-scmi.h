@@ -136,5 +136,9 @@
 #define RESET_I3C6_0	32
 #define RESET_I3C7_0	33
 #define RESET_I3C8_0	34
+#define RESET_UFSPHY_0  35
+
+#define PD_USB0		0
+#define PD_USB1		1
 
 #endif /* _VERSAL2_SCMI_H */

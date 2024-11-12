@@ -82,6 +82,11 @@ static void versal_net_setup_qos(void)
 void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
 				u_register_t arg2, u_register_t arg3)
 {
+	(void)arg0;
+	(void)arg1;
+	(void)arg2;
+	(void)arg3;
+
 #if !(TFA_NO_PM)
 	uint64_t tfa_handoff_addr, buff[HANDOFF_PARAMS_MAX_SIZE] = {0};
 	uint32_t payload[PAYLOAD_ARG_CNT], max_size = HANDOFF_PARAMS_MAX_SIZE;
@@ -174,7 +179,7 @@ int request_intr_type_el3(uint32_t id, interrupt_type_handler_t handler)
 	uint32_t i;
 
 	/* Validate 'handler' and 'id' parameters */
-	if (handler == NULL || index >= MAX_INTR_EL3) {
+	if ((handler == NULL) || (index >= MAX_INTR_EL3)) {
 		return -EINVAL;
 	}
 
@@ -209,7 +214,7 @@ static uint64_t rdo_el3_interrupt_handler(uint32_t id, uint32_t flags,
 	}
 
 	if (handler != NULL) {
-		handler(intr_id, flags, handle, cookie);
+		(void)handler(intr_id, flags, handle, cookie);
 	}
 
 	return 0;

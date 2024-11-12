@@ -73,29 +73,14 @@ static void populate_cpu_err_data(cpu_err_info *cpu_info,
 						  mair_el1);
 	cpu_info->ErrCtxEl1Reg[5]  = read_midr_el1();
 	cpu_info->ErrCtxEl1Reg[6]  = read_mpidr_el1();
-
-#if (ERRATA_SPECULATIVE_AT)
-	cpu_info->ErrCtxEl1Reg[7]  = read_ctx_reg(get_errata_speculative_at_ctx(ctx),
-						  CTX_ERRATA_SPEC_AT_SCTLR_EL1);
-#else
-	cpu_info->ErrCtxEl1Reg[7]  = read_el1_ctx_common(get_el1_sysregs_ctx(ctx),
-						  sctlr_el1);
-#endif /* ERRATA_SPECULATIVE_AT */
-
+	cpu_info->ErrCtxEl1Reg[7] = read_ctx_sctlr_el1_reg_errata(ctx);
 	cpu_info->ErrCtxEl1Reg[8]  = read_ctx_reg(get_gpregs_ctx(ctx),
 						  CTX_GPREG_SP_EL0);
 	cpu_info->ErrCtxEl1Reg[9]  = read_el1_ctx_common(get_el1_sysregs_ctx(ctx),
 						  sp_el1);
 	cpu_info->ErrCtxEl1Reg[10] = read_el1_ctx_common(get_el1_sysregs_ctx(ctx),
 						  spsr_el1);
-#if (ERRATA_SPECULATIVE_AT)
-	cpu_info->ErrCtxEl1Reg[11]  = read_ctx_reg(get_errata_speculative_at_ctx(ctx),
-						   CTX_ERRATA_SPEC_AT_TCR_EL1);
-#else
-	cpu_info->ErrCtxEl1Reg[11] = read_el1_ctx_common(get_el1_sysregs_ctx(ctx),
-						  tcr_el1);
-#endif /* ERRATA_SPECULATIVE_AT */
-
+	cpu_info->ErrCtxEl1Reg[11] = read_ctx_tcr_el1_reg_errata(ctx);
 	cpu_info->ErrCtxEl1Reg[12] = read_el1_ctx_common(get_el1_sysregs_ctx(ctx),
 						  tpidr_el0);
 	cpu_info->ErrCtxEl1Reg[13] = read_el1_ctx_common(get_el1_sysregs_ctx(ctx),
@@ -107,7 +92,7 @@ static void populate_cpu_err_data(cpu_err_info *cpu_info,
 	cpu_info->ErrCtxEl1Reg[16] = read_el1_ctx_common(get_el1_sysregs_ctx(ctx),
 						  ttbr1_el1);
 
-#if CTX_INCLUDE_EL2_REGS
+#if (CTX_INCLUDE_EL2_REGS && IMAGE_BL31)
 	cpu_info->ErrCtxEl2Reg[0]   = read_el2_ctx_common(get_el2_sysregs_ctx(ctx),
 						elr_el2);
 	cpu_info->ErrCtxEl2Reg[1]   = read_el2_ctx_common(get_el2_sysregs_ctx(ctx),
@@ -140,7 +125,7 @@ static void populate_cpu_err_data(cpu_err_info *cpu_info,
 						vttbr_el2);
 	cpu_info->ErrCtxEl2Reg[15]  = read_el2_ctx_common(get_el2_sysregs_ctx(ctx),
 						esr_el2);
-#endif /* CTX_INCLUDE_EL2_REGS */
+#endif /* (CTX_INCLUDE_EL2_REGS && IMAGE_BL31) */
 
 	cpu_info->ErrCtxEl3Reg[0]   = read_ctx_reg(get_el3state_ctx(ctx),
 						   CTX_ELR_EL3);

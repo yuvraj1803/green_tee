@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2019-2023, ARM Limited and Contributors. All rights reserved.
  * Copyright (c) 2019-2023, Intel Corporation. All rights reserved.
+ * Copyright (c) 2024, Altera Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -16,8 +17,13 @@
 #include <lib/mmio.h>
 #include <lib/psci/psci.h>
 #include <plat/common/platform.h>
+#if PLATFORM_MODEL == PLAT_SOCFPGA_AGILEX5
+#include "agilex5_cache.h"
+#endif
+#include "ccu/ncore_ccu.h"
 #include "socfpga_mailbox.h"
 #include "socfpga_plat_def.h"
+#include "socfpga_private.h"
 #include "socfpga_reset_manager.h"
 #include "socfpga_sip_svc.h"
 #include "socfpga_system_manager.h"
@@ -183,11 +189,20 @@ static void __dead2 socfpga_system_reset(void)
 {
 	uint32_t addr_buf[2];
 
-	memcpy(addr_buf, &intel_rsu_update_address,
-			sizeof(intel_rsu_update_address));
+	memcpy_s(addr_buf, sizeof(intel_rsu_update_address),
+		&intel_rsu_update_address, sizeof(intel_rsu_update_address));
+
 	if (intel_rsu_update_address) {
 		mailbox_rsu_update(addr_buf);
 	} else {
+#if CACHE_FLUSH
+		/* ATF Flush and Invalidate Cache */
+		dcsw_op_all(DCCISW);
+		invalidate_cache_low_el();
+#if PLATFORM_MODEL == PLAT_SOCFPGA_AGILEX5
+		flush_l3_dcache();
+#endif
+#endif
 		mailbox_reset_cold();
 	}
 
@@ -198,6 +213,16 @@ static void __dead2 socfpga_system_reset(void)
 static int socfpga_system_reset2(int is_vendor, int reset_type,
 					u_register_t cookie)
 {
+
+#if CACHE_FLUSH
+	/*
+	 * ATF Flush and Invalidate Cache due to hardware limitation
+	 * of auto Flush and Invalidate Cache.
+	 */
+	dcsw_op_all(DCCISW);
+	invalidate_cache_low_el();
+#endif
+
 #if PLATFORM_MODEL == PLAT_SOCFPGA_AGILEX5
 	mailbox_reset_warm(reset_type);
 #else

@@ -134,6 +134,14 @@ CREATE_FEATURE_SUPPORTED(name, is_ ## name ## _present, guard)
  * +----------------------------+
  * |	FEAT_FGT2		|
  * +----------------------------+
+ * |	FEAT_THE		|
+ * +----------------------------+
+ * |	FEAT_SCTLR2		|
+ * +----------------------------+
+ * |	FEAT_D128		|
+ * +----------------------------+
+ * |	FEAT_LS64_ACCDATA	|
+ * +----------------------------+
  */
 
 __attribute__((always_inline))
@@ -261,6 +269,20 @@ CREATE_FEATURE_FUNCS(feat_s2pie, id_aa64mmfr3_el1, ID_AA64MMFR3_EL1_S2PIE_SHIFT,
 /* FEAT_S1PIE */
 CREATE_FEATURE_FUNCS(feat_s1pie, id_aa64mmfr3_el1, ID_AA64MMFR3_EL1_S1PIE_SHIFT,
 		     ID_AA64MMFR3_EL1_S1PIE_MASK, 1U, ENABLE_FEAT_S1PIE)
+
+/* FEAT_THE: Translation Hardening Extension */
+CREATE_FEATURE_FUNCS(feat_the, id_aa64pfr1_el1, ID_AA64PFR1_EL1_THE_SHIFT,
+		     ID_AA64PFR1_EL1_THE_MASK, THE_IMPLEMENTED, ENABLE_FEAT_THE)
+
+/* FEAT_SCTLR2 */
+CREATE_FEATURE_FUNCS(feat_sctlr2, id_aa64mmfr3_el1, ID_AA64MMFR3_EL1_SCTLR2_SHIFT,
+		     ID_AA64MMFR3_EL1_SCTLR2_MASK, SCTLR2_IMPLEMENTED,
+		     ENABLE_FEAT_SCTLR2)
+
+/* FEAT_D128 */
+CREATE_FEATURE_FUNCS(feat_d128, id_aa64mmfr3_el1, ID_AA64MMFR3_EL1_D128_SHIFT,
+		     ID_AA64MMFR3_EL1_D128_MASK, D128_IMPLEMENTED,
+		     ENABLE_FEAT_D128)
 
 __attribute__((always_inline))
 static inline bool is_feat_sxpie_supported(void)
@@ -400,6 +422,11 @@ CREATE_FEATURE_FUNCS(feat_sme, id_aa64pfr1_el1, ID_AA64PFR1_EL1_SME_SHIFT,
 
 CREATE_FEATURE_FUNCS(feat_sme2, id_aa64pfr1_el1, ID_AA64PFR1_EL1_SME_SHIFT,
 		     ID_AA64PFR1_EL1_SME_MASK, SME2_IMPLEMENTED, ENABLE_SME2_FOR_NS)
+
+/* FEAT_LS64_ACCDATA: */
+CREATE_FEATURE_FUNCS(feat_ls64_accdata, id_aa64isar1_el1, ID_AA64ISAR1_LS64_SHIFT,
+		     ID_AA64ISAR1_LS64_MASK, LS64_ACCDATA_IMPLEMENTED,
+		     ENABLE_FEAT_LS64_ACCDATA)
 
 /*******************************************************************************
  * Function to get hardware granularity support

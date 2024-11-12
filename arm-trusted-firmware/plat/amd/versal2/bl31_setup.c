@@ -20,12 +20,14 @@
 #include <lib/xlat_tables/xlat_tables_v2.h>
 #include <plat/common/platform.h>
 #include <plat_arm.h>
+#include <plat_console.h>
 #include <scmi.h>
 
 #include <def.h>
 #include <plat_fdt.h>
 #include <plat_private.h>
 #include <plat_startup.h>
+#include <plat_xfer_list.h>
 #include <pm_api_sys.h>
 #include <pm_client.h>
 
@@ -74,6 +76,10 @@ static inline void bl31_set_default_config(void)
 void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
 				u_register_t arg2, u_register_t arg3)
 {
+	(void)arg0;
+	(void)arg1;
+	(void)arg2;
+	(void)arg3;
 	uint32_t uart_clock;
 	int32_t rc;
 
@@ -121,30 +127,7 @@ void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
 
 	uart_clock = get_uart_clk();
 
-	if (CONSOLE_IS(pl011_0) || CONSOLE_IS(pl011_1)) {
-		static console_t _runtime_console;
-
-		/* Initialize the console to provide early debug support */
-		rc = console_pl011_register(UART_BASE, uart_clock,
-					    UART_BAUDRATE,
-					    &_runtime_console);
-		if (rc == 0) {
-			panic();
-		}
-
-		console_set_scope(&_runtime_console, CONSOLE_FLAG_BOOT |
-				  CONSOLE_FLAG_RUNTIME | CONSOLE_FLAG_CRASH);
-	} else if (CONSOLE_IS(dcc)) {
-		/* Initialize the dcc console for debug.
-		 * dcc is over jtag and does not configures uart0 or uart1.
-		 */
-		rc = console_dcc_register();
-		if (rc == 0) {
-			panic();
-		}
-	} else {
-		/* Making MISRA C 2012 15.7 compliant */
-	}
+	setup_console();
 
 	NOTICE("TF-A running on %s %d.%d\n", board_name_decode(),
 	       platform_version / 10U, platform_version % 10U);
@@ -164,7 +147,12 @@ void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
 	SET_SECURITY_STATE(bl32_image_ep_info.h.attr, SECURE);
 	SET_PARAM_HEAD(&bl33_image_ep_info, PARAM_EP, VERSION_1, 0);
 	SET_SECURITY_STATE(bl33_image_ep_info.h.attr, NON_SECURE);
-	bl31_set_default_config();
+
+	rc = transfer_list_populate_ep_info(&bl32_image_ep_info, &bl33_image_ep_info);
+	if (rc == TL_OPS_NON || rc == TL_OPS_CUS) {
+		NOTICE("BL31: TL not found, using default config\n");
+		bl31_set_default_config();
+	}
 
 	long rev_var = cpu_get_rev_var();
 
@@ -184,7 +172,7 @@ int request_intr_type_el3(uint32_t id, interrupt_type_handler_t handler)
 	uint32_t i;
 
 	/* Validate 'handler' and 'id' parameters */
-	if (handler == NULL || index >= MAX_INTR_EL3) {
+	if ((handler == NULL) || (index >= MAX_INTR_EL3)) {
 		return -EINVAL;
 	}
 
@@ -206,6 +194,7 @@ int request_intr_type_el3(uint32_t id, interrupt_type_handler_t handler)
 static uint64_t rdo_el3_interrupt_handler(uint32_t id, uint32_t flags,
 					  void *handle, void *cookie)
 {
+	(void)id;
 	uint32_t intr_id;
 	uint32_t i;
 	interrupt_type_handler_t handler = NULL;
@@ -249,6 +238,8 @@ void bl31_plat_runtime_setup(void)
 	if (rc != 0) {
 		panic();
 	}
+
+	console_switch_state(CONSOLE_FLAG_RUNTIME);
 }
 
 /*
@@ -257,10 +248,6 @@ void bl31_plat_runtime_setup(void)
 void bl31_plat_arch_setup(void)
 {
 	const mmap_region_t bl_regions[] = {
-#if (defined(XILINX_OF_BOARD_DTB_ADDR) && !IS_TFA_IN_OCM(BL31_BASE))
-		MAP_REGION_FLAT(XILINX_OF_BOARD_DTB_ADDR, XILINX_OF_BOARD_DTB_MAX_SIZE,
-				MT_MEMORY | MT_RW | MT_NS),
-#endif
 		MAP_REGION_FLAT(BL31_BASE, BL31_END - BL31_BASE,
 			MT_MEMORY | MT_RW | MT_SECURE),
 		MAP_REGION_FLAT(BL_CODE_BASE, BL_CODE_END - BL_CODE_BASE,

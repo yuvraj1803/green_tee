@@ -63,6 +63,9 @@ CTX_INCLUDE_AARCH32_REGS	:= 1
 # Include FP registers in cpu context
 CTX_INCLUDE_FPREGS		:= 0
 
+# Include SVE registers in cpu context
+CTX_INCLUDE_SVE_REGS		:= 0
+
 # Debug build
 DEBUG				:= 0
 
@@ -143,7 +146,7 @@ GENERATE_COT			:= 0
 RME_GPT_BITLOCK_BLOCK		:= 1
 
 # Default maximum size of GPT contiguous block
-RME_GPT_MAX_BLOCK		:= 2
+RME_GPT_MAX_BLOCK		:= 512
 
 # Hint platform interrupt control layer that Group 0 interrupts are for EL3. By
 # default, they are for Secure EL1.
@@ -236,6 +239,14 @@ SEPARATE_NOBITS_REGION		:= 0
 # Put BL2 NOLOAD sections (.bss, stacks, page tables) in a separate memory
 # region, platform Makefile is free to override this value.
 SEPARATE_BL2_NOLOAD_REGION	:= 0
+
+# Put RW DATA sections (.rwdata) in a separate memory region, which may be
+# discontiguous from the rest of BL31.
+SEPARATE_RWDATA_REGION		:= 0
+
+# Put SIMD context data structures in a separate memory region. Platforms
+# have the choice to put it outside of default BSS region of EL3 firmware.
+SEPARATE_SIMD_SECTION		:= 0
 
 # If the BL31 image initialisation code is recalimed after use for the secondary
 # cores stack
@@ -402,3 +413,6 @@ EARLY_CONSOLE			:= 0
 # Allow platforms to save/restore DSU PMU registers over a power cycle.
 # Disabled by default and must be enabled by individual platforms.
 PRESERVE_DSU_PMU_REGS		:= 0
+
+# Enable RMMD to forward attestation requests from RMM to EL3.
+RMMD_ENABLE_EL3_TOKEN_SIGN	:= 0

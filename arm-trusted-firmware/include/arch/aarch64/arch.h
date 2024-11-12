@@ -24,6 +24,9 @@
 #define MIDR_PN_MASK		U(0xfff)
 #define MIDR_PN_SHIFT		U(0x4)
 
+/* Extracts the CPU part number from MIDR for checking CPU match */
+#define EXTRACT_PARTNUM(x)     ((x >> MIDR_PN_SHIFT) & MIDR_PN_MASK)
+
 /*******************************************************************************
  * MPIDR macros
  ******************************************************************************/
@@ -290,6 +293,18 @@
 /* ID_AA64ISAR1_EL1 definitions */
 #define ID_AA64ISAR1_EL1		S3_0_C0_C6_1
 
+#define ID_AA64ISAR1_LS64_SHIFT		U(60)
+#define ID_AA64ISAR1_LS64_MASK		ULL(0xf)
+#define LS64_ACCDATA_IMPLEMENTED	ULL(0x3)
+#define LS64_V_IMPLEMENTED		ULL(0x2)
+#define LS64_IMPLEMENTED		ULL(0x1)
+#define LS64_NOT_IMPLEMENTED		ULL(0x0)
+
+#define ID_AA64ISAR1_SB_SHIFT		U(36)
+#define ID_AA64ISAR1_SB_MASK		ULL(0xf)
+#define SB_IMPLEMENTED			ULL(0x1)
+#define SB_NOT_IMPLEMENTED		ULL(0x0)
+
 #define ID_AA64ISAR1_GPI_SHIFT		U(28)
 #define ID_AA64ISAR1_GPI_MASK		ULL(0xf)
 #define ID_AA64ISAR1_GPA_SHIFT		U(24)
@@ -299,11 +314,6 @@
 #define ID_AA64ISAR1_API_MASK		ULL(0xf)
 #define ID_AA64ISAR1_APA_SHIFT		U(4)
 #define ID_AA64ISAR1_APA_MASK		ULL(0xf)
-
-#define ID_AA64ISAR1_SB_SHIFT		U(36)
-#define ID_AA64ISAR1_SB_MASK		ULL(0xf)
-#define SB_IMPLEMENTED			ULL(0x1)
-#define SB_NOT_IMPLEMENTED		ULL(0x0)
 
 /* ID_AA64ISAR2_EL1 definitions */
 #define ID_AA64ISAR2_EL1		S3_0_C0_C6_2
@@ -328,6 +338,7 @@
 #define PARANGE_0100	U(44)
 #define PARANGE_0101	U(48)
 #define PARANGE_0110	U(52)
+#define PARANGE_0111	U(56)
 
 #define ID_AA64MMFR0_EL1_ECV_SHIFT		U(60)
 #define ID_AA64MMFR0_EL1_ECV_MASK		ULL(0xf)
@@ -391,6 +402,10 @@
 /* ID_AA64MMFR3_EL1 definitions */
 #define ID_AA64MMFR3_EL1			S3_0_C0_C7_3
 
+#define ID_AA64MMFR3_EL1_D128_SHIFT		U(32)
+#define ID_AA64MMFR3_EL1_D128_MASK		ULL(0xf)
+#define D128_IMPLEMENTED			ULL(0x1)
+
 #define ID_AA64MMFR3_EL1_S2POE_SHIFT		U(20)
 #define ID_AA64MMFR3_EL1_S2POE_MASK		ULL(0xf)
 
@@ -402,6 +417,10 @@
 
 #define ID_AA64MMFR3_EL1_S1PIE_SHIFT		U(8)
 #define ID_AA64MMFR3_EL1_S1PIE_MASK		ULL(0xf)
+
+#define ID_AA64MMFR3_EL1_SCTLR2_SHIFT		U(4)
+#define ID_AA64MMFR3_EL1_SCTLR2_MASK		ULL(0xf)
+#define SCTLR2_IMPLEMENTED			ULL(1)
 
 #define ID_AA64MMFR3_EL1_TCRX_SHIFT		U(0)
 #define ID_AA64MMFR3_EL1_TCRX_MASK		ULL(0xf)
@@ -429,6 +448,10 @@
 #define ID_AA64PFR1_EL1_GCS_SHIFT	U(44)
 #define ID_AA64PFR1_EL1_GCS_MASK	ULL(0xf)
 #define GCS_IMPLEMENTED			ULL(1)
+
+#define ID_AA64PFR1_EL1_THE_SHIFT	U(48)
+#define ID_AA64PFR1_EL1_THE_MASK	ULL(0xf)
+#define THE_IMPLEMENTED			ULL(1)
 
 #define RNG_TRAP_IMPLEMENTED		ULL(0x1)
 
@@ -583,15 +606,20 @@
 #define SCR_FGTEN2_BIT		(UL(1) << 59)
 #define SCR_NSE_BIT		(ULL(1) << SCR_NSE_SHIFT)
 #define SCR_GPF_BIT		(UL(1) << 48)
+#define SCR_D128En_BIT		(UL(1) << 47)
 #define SCR_TWEDEL_SHIFT	U(30)
 #define SCR_TWEDEL_MASK		ULL(0xf)
 #define SCR_PIEN_BIT		(UL(1) << 45)
+#define SCR_SCTLR2En_BIT	(UL(1) << 44)
 #define SCR_TCR2EN_BIT		(UL(1) << 43)
+#define SCR_RCWMASKEn_BIT	(UL(1) << 42)
+#define SCR_ENTP2_SHIFT		U(41)
+#define SCR_ENTP2_BIT		(UL(1) << SCR_ENTP2_SHIFT)
 #define SCR_TRNDR_BIT		(UL(1) << 40)
 #define SCR_GCSEn_BIT		(UL(1) << 39)
 #define SCR_HXEn_BIT		(UL(1) << 38)
-#define SCR_ENTP2_SHIFT		U(41)
-#define SCR_ENTP2_BIT		(UL(1) << SCR_ENTP2_SHIFT)
+#define SCR_ADEn_BIT		(UL(1) << 37)
+#define SCR_EnAS0_BIT		(UL(1) << 36)
 #define SCR_AMVOFFEN_SHIFT	U(35)
 #define SCR_AMVOFFEN_BIT	(UL(1) << SCR_AMVOFFEN_SHIFT)
 #define SCR_TWEDEn_BIT		(UL(1) << 29)
@@ -620,6 +648,8 @@
 
 /* MDCR_EL3 definitions */
 #define MDCR_EBWE_BIT		(ULL(1) << 43)
+#define MDCR_E3BREC		(ULL(1) << 38)
+#define MDCR_E3BREW		(ULL(1) << 37)
 #define MDCR_EnPMSN_BIT		(ULL(1) << 36)
 #define MDCR_MPMX_BIT		(ULL(1) << 35)
 #define MDCR_MCCD_BIT		(ULL(1) << 34)
@@ -1164,8 +1194,9 @@
 /* PAR_EL1 fields */
 #define PAR_F_SHIFT	U(0)
 #define PAR_F_MASK	ULL(0x1)
-#define PAR_ADDR_SHIFT	U(12)
-#define PAR_ADDR_MASK	(BIT(40) - ULL(1)) /* 40-bits-wide page address */
+
+#define PAR_D128_ADDR_MASK	GENMASK(55, 12) /* 44-bits-wide page address */
+#define PAR_ADDR_MASK		GENMASK(51, 12) /* 40-bits-wide page address */
 
 /*******************************************************************************
  * Definitions for system register interface to SPE
@@ -1468,6 +1499,23 @@
  ******************************************************************************/
 #define TRFCR_EL2		S3_4_C1_C2_1
 #define TRFCR_EL1		S3_0_C1_C2_1
+
+/*******************************************************************************
+ * FEAT_THE - Translation Hardening Extension Registers
+ ******************************************************************************/
+#define RCWMASK_EL1		S3_0_C13_C0_6
+#define RCWSMASK_EL1		S3_0_C13_C0_3
+
+/*******************************************************************************
+ * FEAT_SCTLR2 - Extension to SCTLR_ELx Registers
+ ******************************************************************************/
+#define SCTLR2_EL2		S3_4_C1_C0_3
+#define SCTLR2_EL1		S3_0_C1_C0_3
+
+/*******************************************************************************
+ * FEAT_LS64_ACCDATA - LoadStore64B with status data
+ ******************************************************************************/
+#define ACCDATA_EL1		S3_0_C13_C0_5
 
 /*******************************************************************************
  * Definitions for DynamicIQ Shared Unit registers

@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2019-2021, ARM Limited and Contributors. All rights reserved.
  * Copyright (c) 2019-2023, Intel Corporation. All rights reserved.
+ * Copyright (c) 2024, Altera Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -19,9 +20,11 @@
 #include <lib/xlat_tables/xlat_tables_v2.h>
 
 #include "agilex5_clock_manager.h"
+#include "agilex5_ddr.h"
 #include "agilex5_memory_controller.h"
 #include "agilex5_mmc.h"
 #include "agilex5_pinmux.h"
+#include "agilex5_power_manager.h"
 #include "agilex5_system_manager.h"
 #include "ccu/ncore_ccu.h"
 #include "combophy/combophy.h"
@@ -35,6 +38,7 @@
 #include "socfpga_private.h"
 #include "socfpga_reset_manager.h"
 #include "socfpga_ros.h"
+#include "socfpga_vab.h"
 #include "wdt/watchdog.h"
 
 
@@ -64,33 +68,84 @@ const mmap_region_t agilex_plat_mmap[] = {
 
 boot_source_type boot_source = BOOT_SOURCE;
 
-void bl2_el3_early_platform_setup(u_register_t x0, u_register_t x1,
-				u_register_t x2, u_register_t x4)
+void bl2_el3_early_platform_setup(u_register_t x0 __unused,
+				  u_register_t x1 __unused,
+				  u_register_t x2 __unused,
+				  u_register_t x3 __unused)
 {
 	static console_t console;
+	handoff reverse_handoff_ptr;
 
-	handoff reverse_handoff_ptr = { 0 };
-
-	generic_delay_timer_init();
-	config_clkmgr_handoff(&reverse_handoff_ptr);
-	mailbox_init();
+	/* Enable nonsecure access for peripherals and other misc components */
 	enable_nonsecure_access();
 
+	/* Bring all the required peripherals out of reset */
 	deassert_peripheral_reset();
-	if (combo_phy_init(&reverse_handoff_ptr) != 0) {
-		ERROR("Combo Phy initialization failed\n");
+
+	/*
+	 * Initialize the UART console early in BL2 EL3 boot flow to get
+	 * the error/notice messages wherever required.
+	 */
+	console_16550_register(PLAT_INTEL_UART_BASE, PLAT_UART_CLOCK,
+			       PLAT_BAUDRATE, &console);
+
+	/* Generic delay timer init */
+	generic_delay_timer_init();
+
+	socfpga_delay_timer_init();
+
+	/* Get the handoff data */
+	if ((socfpga_get_handoff(&reverse_handoff_ptr)) != 0) {
+		ERROR("SOCFPGA: Failed to get the correct handoff data\n");
+		panic();
 	}
 
-	console_16550_register(PLAT_INTEL_UART_BASE, PLAT_UART_CLOCK,
-	PLAT_BAUDRATE, &console);
+	/* Configure the pinmux */
+	config_pinmux(&reverse_handoff_ptr);
 
-	/* Store magic number */
-	// TODO: Temp workaround to ungate testing
-	// mmio_write_32(L2_RESET_DONE_REG, PLAT_L2_RESET_REQ);
+	/* Configure OCRAM to NON SECURE ACCESS */
+	mmio_write_32(OCRAM_REGION_0_REG_BASE, OCRAM_NON_SECURE_ENABLE);
+	mmio_write_32(SOCFPGA_L4_PER_SCR_REG_BASE + SOCFPGA_SDMMC_SECU_BIT,
+		SOCFPGA_SDMMC_SECU_BIT_ENABLE);
+	mmio_write_32(SOCFPGA_L4_SYS_SCR_REG_BASE + SOCFPGA_SDMMC_SECU_BIT,
+		SOCFPGA_SDMMC_SECU_BIT_ENABLE);
+	mmio_write_32(SOCFPGA_LWSOC2FPGA_SCR_REG_BASE,
+		SOCFPGA_LWSOC2FPGA_ENABLE);
 
+	/* Configure the clock manager */
+	if ((config_clkmgr_handoff(&reverse_handoff_ptr)) != 0) {
+		ERROR("SOCFPGA: Failed to initialize the clock manager\n");
+		panic();
+	}
+
+	/* Configure power manager PSS SRAM power gate */
+	config_pwrmgr_handoff(&reverse_handoff_ptr);
+
+	/* Initialize the mailbox to enable communication between HPS and SDM */
+	mailbox_init();
+
+	/* Perform a handshake with certain peripherals before issuing a reset */
+	config_hps_hs_before_warm_reset();
+
+	/* TODO: watchdog init */
+	//watchdog_init(clkmgr_get_rate(CLKMGR_WDT_CLK_ID));
+
+	/* Initialize the CCU module for hardware cache coherency */
+	init_ncore_ccu();
+
+	socfpga_emac_init();
+
+	/* DDR and IOSSM driver init */
+	agilex5_ddr_init(&reverse_handoff_ptr);
+
+	if (combo_phy_init(&reverse_handoff_ptr) != 0) {
+		ERROR("SOCFPGA: Combo Phy initialization failed\n");
+	}
+
+	/* Enable FPGA bridges as required */
 	if (!intel_mailbox_is_fpga_not_ready()) {
 		socfpga_bridges_enable(SOC2FPGA_MASK | LWHPS2FPGA_MASK |
-					FPGA2SOC_MASK | F2SDRAM0_MASK);
+				       FPGA2SOC_MASK | F2SDRAM0_MASK);
 	}
 }
 
@@ -99,7 +154,8 @@ void bl2_el3_plat_arch_setup(void)
 	handoff reverse_handoff_ptr;
 	unsigned long offset = 0;
 
-	struct cdns_sdmmc_params params = EMMC_INIT_PARAMS((uintptr_t) &cdns_desc, get_mmc_clk());
+	struct cdns_sdmmc_params params = EMMC_INIT_PARAMS((uintptr_t) &cdns_desc,
+							   clkmgr_get_rate(CLKMGR_SDMMC_CLK_ID));
 
 	mmc_info.mmc_dev_type = MMC_DEVICE_TYPE;
 	mmc_info.ocr_voltage = OCR_3_3_3_4 | OCR_3_2_3_3;
@@ -110,7 +166,7 @@ void bl2_el3_plat_arch_setup(void)
 	switch (boot_source) {
 	case BOOT_SOURCE_SDMMC:
 		NOTICE("SDMMC boot\n");
-		sdmmc_init(&reverse_handoff_ptr, &params, &mmc_info);
+		cdns_mmc_init(&params, &mmc_info);
 		socfpga_io_setup(boot_source, PLAT_SDMMC_DATA_BASE);
 		break;
 
@@ -164,6 +220,20 @@ int bl2_plat_handle_post_image_load(unsigned int image_id)
 	bl_mem_params_node_t *bl_mem_params = get_bl_mem_params_node(image_id);
 
 	assert(bl_mem_params);
+
+#if SOCFPGA_SECURE_VAB_AUTH
+	/*
+	 * VAB Authentication start here.
+	 * If failed to authenticate, shall not proceed to process BL31 and hang.
+	 */
+	int ret = 0;
+
+	ret = socfpga_vab_init(image_id);
+	if (ret < 0) {
+		ERROR("SOCFPGA VAB Authentication failed\n");
+		wfi();
+	}
+#endif
 
 	switch (image_id) {
 	case BL33_IMAGE_ID:

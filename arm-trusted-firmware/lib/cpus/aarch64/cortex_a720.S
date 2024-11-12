@@ -26,6 +26,18 @@
         wa_cve_2022_23960_bhb_vector_table CORTEX_A720_BHB_LOOP_COUNT, cortex_a720
 #endif /* WORKAROUND_CVE_2022_23960 */
 
+workaround_reset_start cortex_a720, ERRATUM(2792132), ERRATA_A720_2792132
+        sysreg_bit_set CORTEX_A720_CPUACTLR2_EL1, BIT(26)
+workaround_reset_end cortex_a720, ERRATUM(2792132)
+
+check_erratum_ls cortex_a720, ERRATUM(2792132), CPU_REV(0, 1)
+
+workaround_reset_start cortex_a720, ERRATUM(2844092), ERRATA_A720_2844092
+        sysreg_bit_set CORTEX_A720_CPUACTLR4_EL1, BIT(11)
+workaround_reset_end cortex_a720, ERRATUM(2844092)
+
+check_erratum_ls cortex_a720, ERRATUM(2844092), CPU_REV(0, 1)
+
 workaround_reset_start cortex_a720, ERRATUM(2926083), ERRATA_A720_2926083
 /* Erratum 2926083 workaround is required only if SPE is enabled */
 #if ENABLE_SPE_FOR_NS != 0
@@ -79,8 +91,6 @@ func cortex_a720_core_pwr_dwn
 	isb
 	ret
 endfunc cortex_a720_core_pwr_dwn
-
-errata_report_shim cortex_a720
 
 	/* ---------------------------------------------
 	 * This function provides Cortex A720-specific

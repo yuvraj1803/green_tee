@@ -194,5 +194,9 @@ __attribute__((always_inline))
 static inline bool is_feat_ebep_present(void) { return false; }
 __attribute__((always_inline))
 static inline bool is_feat_sebep_present(void) { return false; }
+__attribute__((always_inline))
+static inline bool is_feat_d128_present(void) { return false; }
+__attribute__((always_inline))
+static inline bool is_feat_ls64_accdata_present(void) { return false; }
 
 #endif /* ARCH_FEATURES_H */

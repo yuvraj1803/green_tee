@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2019-2023, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2024, Altera Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -13,10 +14,11 @@
 
 /* Platform Setting */
 #define PLATFORM_MODEL				PLAT_SOCFPGA_STRATIX10
-#define BOOT_SOURCE				BOOT_SOURCE_SDMMC
 #define PLAT_PRIMARY_CPU			0
 #define PLAT_CLUSTER_ID_MPIDR_AFF_SHIFT		MPIDR_AFF1_SHIFT
 #define PLAT_CPU_ID_MPIDR_AFF_SHIFT		MPIDR_AFF0_SHIFT
+#define PLAT_HANDOFF_OFFSET			0xFFE3F000
+#define PLAT_TIMER_BASE_ADDR			0xFFD01000
 
 /* FPGA config helpers */
 #define INTEL_SIP_SMC_FPGA_CONFIG_ADDR		0x400000
@@ -25,6 +27,15 @@
 /* QSPI Setting */
 #define CAD_QSPIDATA_OFST			0xff900000
 #define CAD_QSPI_OFFSET				0xff8d2000
+
+/* FIP Setting */
+#define PLAT_FIP_BASE				(0)
+#define PLAT_FIP_MAX_SIZE			(0x1000000)
+
+/* SDMMC Setting */
+#define PLAT_MMC_DATA_BASE			(0xffe3c000)
+#define PLAT_MMC_DATA_SIZE			(0x2000)
+#define SOCFPGA_MMC_BLOCK_SIZE			U(8192)
 
 /* Register Mapping */
 #define SOCFPGA_CCU_NOC_REG_BASE		0xf7000000

@@ -7,6 +7,8 @@
 #ifndef CONTEXT_EL1_H
 #define CONTEXT_EL1_H
 
+#include <lib/extensions/sysreg128.h>
+
 #ifndef __ASSEMBLER__
 
 /*******************************************************************************
@@ -28,15 +30,12 @@ typedef struct el1_common_regs {
 	uint64_t csselr_el1;
 	uint64_t sp_el1;
 	uint64_t esr_el1;
-	uint64_t ttbr0_el1;
-	uint64_t ttbr1_el1;
 	uint64_t mair_el1;
 	uint64_t amair_el1;
 	uint64_t actlr_el1;
 	uint64_t tpidr_el1;
 	uint64_t tpidr_el0;
 	uint64_t tpidrro_el0;
-	uint64_t par_el1;
 	uint64_t far_el1;
 	uint64_t afsr0_el1;
 	uint64_t afsr1_el1;
@@ -44,6 +43,9 @@ typedef struct el1_common_regs {
 	uint64_t vbar_el1;
 	uint64_t mdccint_el1;
 	uint64_t mdscr_el1;
+	sysreg_t par_el1;
+	sysreg_t ttbr0_el1;
+	sysreg_t ttbr1_el1;
 } el1_common_regs_t;
 
 typedef struct el1_aarch32_regs {
@@ -107,6 +109,19 @@ typedef struct el1_gcs_regs {
 	uint64_t gcspr_el0;
 } el1_gcs_regs_t;
 
+typedef struct el1_the_regs {
+	sysreg_t rcwmask_el1;
+	sysreg_t rcwsmask_el1;
+} el1_the_regs_t;
+
+typedef struct el1_sctlr2_regs {
+	uint64_t sctlr2_el1;
+} el1_sctlr2_regs_t;
+
+typedef struct el1_ls64_regs {
+	uint64_t accdata_el1;
+} el1_ls64_regs_t;
+
 typedef struct el1_sysregs {
 
 	el1_common_regs_t common;
@@ -155,6 +170,17 @@ typedef struct el1_sysregs {
 	el1_gcs_regs_t gcs;
 #endif
 
+#if ENABLE_FEAT_THE
+	el1_the_regs_t the;
+#endif
+
+#if ENABLE_FEAT_SCTLR2
+	el1_sctlr2_regs_t sctlr2;
+#endif
+
+#if ENABLE_FEAT_LS64_ACCDATA
+	el1_ls64_regs_t ls64;
+#endif
 } el1_sysregs_t;
 
 
@@ -266,6 +292,33 @@ typedef struct el1_sysregs {
 #define read_el1_ctx_gcs(ctx, reg)		ULL(0)
 #define write_el1_ctx_gcs(ctx, reg, val)
 #endif /* ENABLE_FEAT_GCS */
+
+#if ENABLE_FEAT_THE
+#define read_el1_ctx_the(ctx, reg)		(((ctx)->the).reg)
+#define write_el1_ctx_the(ctx, reg, val)	((((ctx)->the).reg)	\
+							= (uint64_t) (val))
+#else
+#define read_el1_ctx_the(ctx, reg)		ULL(0)
+#define write_el1_ctx_the(ctx, reg, val)
+#endif /* ENABLE_FEAT_THE */
+
+#if ENABLE_FEAT_SCTLR2
+#define read_el1_ctx_sctlr2(ctx, reg)		(((ctx)->sctlr2).reg)
+#define write_el1_ctx_sctlr2(ctx, reg, val)	((((ctx)->sctlr2).reg)	\
+							= (uint64_t) (val))
+#else
+#define read_el1_ctx_sctlr2(ctx, reg)		ULL(0)
+#define write_el1_ctx_sctlr2(ctx, reg, val)
+#endif /* ENABLE_FEAT_SCTLR2 */
+
+#if ENABLE_FEAT_LS64_ACCDATA
+#define read_el1_ctx_ls64(ctx, reg)		(((ctx)->ls64).reg)
+#define write_el1_ctx_ls64(ctx, reg, val)	((((ctx)->ls64).reg)	\
+							= (uint64_t) (val))
+#else
+#define read_el1_ctx_ls64(ctx, reg)		ULL(0)
+#define write_el1_ctx_ls64(ctx, reg, val)
+#endif /* ENABLE_FEAT_LS64_ACCDATA */
 /******************************************************************************/
 #endif /* __ASSEMBLER__ */
 

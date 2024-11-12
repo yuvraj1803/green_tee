@@ -92,14 +92,18 @@ static void poplar_pwr_domain_suspend_finish(
 static void __dead2 poplar_system_off(void)
 {
 	ERROR("Poplar System Off: operation not handled.\n");
+	/* Turn off watchdog0 before panic() */
+	mmio_write_32((uintptr_t)(HISI_WDG0_BASE + 0xc00), 0x1ACCE551);
+	mmio_write_32((uintptr_t)(HISI_WDG0_BASE + 0x8),   0x00000000);
 	panic();
 }
 
 static void __dead2 poplar_system_reset(void)
 {
-	mmio_write_32((uintptr_t)(HISI_WDG0_BASE + 0xc00), 0x1ACCE551);
-	mmio_write_32((uintptr_t)(HISI_WDG0_BASE + 0x0),   0x00000100);
-	mmio_write_32((uintptr_t)(HISI_WDG0_BASE + 0x8),   0x00000003);
+	/* Unlock Sysctrl critical registers */
+	mmio_write_32((uintptr_t)(REG_BASE_SCTL + REG_SC_LOCKEN), SC_UNLOCK_MAGIC);
+	/* Assert system reset */
+	mmio_write_32((uintptr_t)(REG_BASE_SCTL + REG_SC_SYSRES), 0xfee1dead);
 
 	wfi();
 	ERROR("Poplar System Reset: operation not handled.\n");

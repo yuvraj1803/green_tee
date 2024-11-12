@@ -10,6 +10,7 @@
 
 #include <drivers/scmi-msg.h>
 #include <drivers/scmi.h>
+#include <lib/mmio.h>
 #include <lib/utils_def.h>
 #include <platform_def.h>
 #include <scmi.h>
@@ -50,8 +51,8 @@ static struct scmi_clk scmi0_clock[] = {
 	CLOCK_CELL(CLK_SERIAL1_0, CLK_SERIAL1_0, "uart1_uartclk", true, 100000000),
 	CLOCK_CELL(CLK_SERIAL1_1, CLK_SERIAL1_1, "uart1_apb_pclk", true, 100000000),
 	CLOCK_CELL(CLK_UFS0_0, CLK_UFS0_0, "ufs_core_clk", true, 100000000),
-	CLOCK_CELL(CLK_UFS0_1, CLK_UFS0_1, "ufs_phy_clk", true, 100000000),
-	CLOCK_CELL(CLK_UFS0_2, CLK_UFS0_2, "ufs_ref_pclk", true, 100000000),
+	CLOCK_CELL(CLK_UFS0_1, CLK_UFS0_1, "ufs_phy_clk", true, 26000000),
+	CLOCK_CELL(CLK_UFS0_2, CLK_UFS0_2, "ufs_ref_pclk", true, 26000000),
 	CLOCK_CELL(CLK_USB0_0, CLK_USB0_0, "usb0_bus_clk", true, 100000000),
 	CLOCK_CELL(CLK_USB0_1, CLK_USB0_1, "usb0_ref_clk", true, 100000000),
 	CLOCK_CELL(CLK_USB0_2, CLK_USB0_2, "usb0_dwc_clk", true, 100000000),
@@ -179,6 +180,31 @@ static struct scmi_reset scmi0_reset[] = {
 	RESET_CELL(RESET_I3C6_0, RESET_I3C6_0, "i3c6"),
 	RESET_CELL(RESET_I3C7_0, RESET_I3C7_0, "i3c7"),
 	RESET_CELL(RESET_I3C8_0, RESET_I3C8_0, "i3c8"),
+	RESET_CELL(RESET_UFSPHY_0, RESET_UFSPHY_0, "ufsphy0"),
+};
+
+/**
+ * struct scmi_pd - Data for the exposed power domain controller
+ * @pd_id: pd identifier in RCC reset driver
+ * @name: pd string ID exposed to agent
+ * @state: keep state setting
+ */
+struct scmi_pd {
+	unsigned long pd_id;
+	const char *name;
+	unsigned int state;
+};
+
+#define PD_CELL(_scmi_id, _id, _name, _state) \
+	[_scmi_id] = { \
+		.pd_id = _id, \
+		.name = _name, \
+		.state = _state, \
+	}
+
+static struct scmi_pd scmi0_pd[] = {
+	PD_CELL(PD_USB0, PD_USB0, "usb0", 0),
+	PD_CELL(PD_USB1, PD_USB1, "usb1", 0),
 };
 
 struct scmi_resources {
@@ -186,7 +212,8 @@ struct scmi_resources {
 	size_t clock_count;
 	struct scmi_reset *reset;
 	size_t reset_count;
-
+	struct scmi_pd *pd;
+	size_t pd_count;
 };
 
 static const struct scmi_resources resources[] = {
@@ -195,6 +222,8 @@ static const struct scmi_resources resources[] = {
 		.clock_count = ARRAY_SIZE(scmi0_clock),
 		.reset = scmi0_reset,
 		.reset_count = ARRAY_SIZE(scmi0_reset),
+		.pd = scmi0_pd,
+		.pd_count = ARRAY_SIZE(scmi0_pd),
 	},
 };
 
@@ -240,7 +269,7 @@ size_t plat_scmi_clock_count(unsigned int agent_id)
 
 const char *plat_scmi_clock_get_name(unsigned int agent_id, unsigned int scmi_id)
 {
-	struct scmi_clk *clock = clk_find(agent_id, scmi_id);
+	const struct scmi_clk *clock = clk_find(agent_id, scmi_id);
 	const char *ret;
 
 	if (clock == NULL) {
@@ -258,7 +287,7 @@ int32_t plat_scmi_clock_rates_array(unsigned int agent_id, unsigned int scmi_id,
 				    unsigned long *array, size_t *nb_elts,
 				    uint32_t start_idx)
 {
-	struct scmi_clk *clock = clk_find(agent_id, scmi_id);
+	const struct scmi_clk *clock = clk_find(agent_id, scmi_id);
 
 	if (clock == NULL) {
 		return SCMI_NOT_FOUND;
@@ -283,7 +312,7 @@ int32_t plat_scmi_clock_rates_array(unsigned int agent_id, unsigned int scmi_id,
 
 unsigned long plat_scmi_clock_get_rate(unsigned int agent_id, unsigned int scmi_id)
 {
-	struct scmi_clk *clock = clk_find(agent_id, scmi_id);
+	const struct scmi_clk *clock = clk_find(agent_id, scmi_id);
 	unsigned long ret;
 
 	if ((clock == NULL)) {
@@ -312,7 +341,7 @@ int32_t plat_scmi_clock_set_rate(unsigned int agent_id, unsigned int scmi_id,
 
 int32_t plat_scmi_clock_get_state(unsigned int agent_id, unsigned int scmi_id)
 {
-	struct scmi_clk *clock = clk_find(agent_id, scmi_id);
+	const struct scmi_clk *clock = clk_find(agent_id, scmi_id);
 	int32_t ret;
 
 	if ((clock == NULL)) {
@@ -433,13 +462,121 @@ int32_t plat_scmi_rstd_set_state(unsigned int agent_id, unsigned int scmi_id,
 	if (assert_not_deassert) {
 		NOTICE("SCMI reset %lu/%s set\n",
 		       reset->reset_id, plat_scmi_rstd_get_name(agent_id, scmi_id));
+
+		switch (scmi_id) {
+		case RESET_UFS0_0:
+			mmio_write_32(PMXC_CRP_RST_UFS, 1);
+			break;
+		case RESET_UFSPHY_0:
+			mmio_write_32(PMXC_IOU_SLCR_PHY_RESET, 1);
+			break;
+		default:
+			break;
+		}
 	} else {
 		NOTICE("SCMI reset %lu/%s release\n",
 		       reset->reset_id, plat_scmi_rstd_get_name(agent_id, scmi_id));
+
+		switch (scmi_id) {
+		case RESET_UFS0_0:
+			mmio_write_32(PMXC_CRP_RST_UFS, 0);
+			break;
+		case RESET_UFSPHY_0:
+			mmio_write_32(PMXC_IOU_SLCR_PHY_RESET, 0);
+			break;
+		default:
+			break;
+		}
 	}
 
 	return SCMI_SUCCESS;
 }
+
+/*
+ * Platform SCMI reset domains
+ */
+static struct scmi_pd *find_pd(unsigned int agent_id, unsigned int pd_id)
+{
+	const struct scmi_resources *resource = find_resource(agent_id);
+	size_t n;
+
+	if (resource != NULL) {
+		for (n = 0U; n < resource->pd_count; n++) {
+			if (n == pd_id) {
+				return &resource->pd[n];
+			}
+		}
+	}
+
+	return NULL;
+}
+
+size_t plat_scmi_pd_count(unsigned int agent_id)
+{
+	const struct scmi_resources *resource = find_resource(agent_id);
+	size_t ret;
+
+	if (resource == NULL) {
+		ret = 0U;
+	} else {
+		ret = resource->pd_count;
+
+		NOTICE("SCMI: PD: %d\n", (unsigned int)ret);
+	}
+	return ret;
+}
+
+const char *plat_scmi_pd_get_name(unsigned int agent_id, unsigned int pd_id)
+{
+	const struct scmi_pd *pd = find_pd(agent_id, pd_id);
+
+	if (pd == NULL) {
+		return NULL;
+	}
+
+	return pd->name;
+}
+
+unsigned int plat_scmi_pd_statistics(unsigned int agent_id, unsigned long *pd_id)
+{
+	return 0U;
+}
+
+unsigned int plat_scmi_pd_get_attributes(unsigned int agent_id, unsigned int pd_id)
+{
+	return 0U;
+}
+
+unsigned int plat_scmi_pd_get_state(unsigned int agent_id, unsigned int pd_id)
+{
+	const struct scmi_pd *pd = find_pd(agent_id, pd_id);
+
+	if (pd == NULL) {
+		return SCMI_NOT_SUPPORTED;
+	}
+
+	NOTICE("SCMI: PD: get id: %d, state: %x\n", pd_id, pd->state);
+
+	return pd->state;
+}
+
+int32_t plat_scmi_pd_set_state(unsigned int agent_id, unsigned int flags, unsigned int pd_id,
+			       unsigned int state)
+{
+	struct scmi_pd *pd = find_pd(agent_id, pd_id);
+
+	if (pd == NULL) {
+		return SCMI_NOT_SUPPORTED;
+	}
+
+	NOTICE("SCMI: PD: set id: %d, orig state: %x, new state: %x,  flags: %x\n",
+	       pd_id, pd->state, state, flags);
+
+	pd->state = state;
+
+	return 0U;
+}
+
 
 /* Currently only one channel is supported. Expectation is that channel 0 is used by NS SW */
 static struct scmi_msg_channel scmi_channel[] = {
@@ -475,10 +612,8 @@ static const uint8_t plat_protocol_list[] = {
 	SCMI_PROTOCOL_ID_BASE,
 	SCMI_PROTOCOL_ID_CLOCK,
 	SCMI_PROTOCOL_ID_RESET_DOMAIN,
-	/*
-	 *SCMI_PROTOCOL_ID_POWER_DOMAIN,
-	 *SCMI_PROTOCOL_ID_SENSOR,
-	 */
+	SCMI_PROTOCOL_ID_POWER_DOMAIN,
+	/* SCMI_PROTOCOL_ID_SENSOR, */
 	0U /* Null termination */
 };
 
@@ -512,8 +647,13 @@ void init_scmi_server(void)
 		for (i = 0U; i < ARRAY_SIZE(scmi0_clock); i++) {
 
 			/* Keep i2c on 100MHz to calculate rates properly */
-			if (i >= CLK_I2C0_0 && i <= CLK_I2C7_0)
+			if ((i >= CLK_I2C0_0) && (i <= CLK_I2C7_0))
 				continue;
+
+			/* Keep UFS clocks to default values to get the expected rates */
+			if (i >= CLK_UFS0_0 && i <= CLK_UFS0_2)
+				continue;
+
 			/*
 			 * SPP supports multiple versions.
 			 * The cpu_clock value is set to corresponding SPP

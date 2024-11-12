@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2013-2020, Arm Limited and Contributors. All rights reserved.
  * Copyright (c) 2019-2022, Xilinx, Inc. All rights reserved.
- * Copyright (c) 2022-2023, Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) 2022-2024, Advanced Micro Devices, Inc. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -169,9 +169,7 @@ static enum pm_ret_status pm_ipi_buff_read(const struct pm_proc *proc,
 	size_t i;
 	enum pm_ret_status ret;
 #if IPI_CRC_CHECK
-	uint32_t *payload_ptr = value;
-	size_t j;
-	uint32_t response_payload[PAYLOAD_ARG_CNT];
+	uint32_t crc;
 #endif
 	uintptr_t buffer_base = proc->ipi->buffer_base +
 				IPI_BUFFER_TARGET_REMOTE_OFFSET +
@@ -184,27 +182,20 @@ static enum pm_ret_status pm_ipi_buff_read(const struct pm_proc *proc,
 	 * buf-2: unused
 	 * buf-3: unused
 	 */
-	for (i = 1; i <= count; i++) {
-		*value = mmio_read_32(buffer_base + (i * PAYLOAD_ARG_SIZE));
-		value++;
+	for (i = 0U; i < count; i++) {
+		value[i] = mmio_read_32(buffer_base + ((i + 1U) * PAYLOAD_ARG_SIZE));
 	}
 
 	ret = mmio_read_32(buffer_base);
 #if IPI_CRC_CHECK
-	for (j = 0; j < PAYLOAD_ARG_CNT; j++) {
-		response_payload[j] = mmio_read_32(buffer_base +
-						(j * PAYLOAD_ARG_SIZE));
-	}
-
-	if (response_payload[PAYLOAD_CRC_POS] !=
-			calculate_crc(response_payload, IPI_W0_TO_W6_SIZE)) {
-		NOTICE("ERROR in CRC response payload value:0x%x\n",
-					response_payload[PAYLOAD_CRC_POS]);
+	crc = mmio_read_32(buffer_base + (PAYLOAD_CRC_POS * PAYLOAD_ARG_SIZE));
+	if (crc != calculate_crc((uint32_t *)buffer_base, IPI_W0_TO_W6_SIZE)) {
+		NOTICE("ERROR in CRC response payload value:0x%x\n", crc);
 		ret = PM_RET_ERROR_INVALID_CRC;
 		/* Payload data is invalid as CRC validation failed
 		 * Clear the payload to avoid leakage of data to upper layers
 		 */
-		memset(payload_ptr, 0, count);
+		memset(value, 0, count);
 	}
 #endif
 
@@ -226,39 +217,31 @@ static enum pm_ret_status pm_ipi_buff_read(const struct pm_proc *proc,
 enum pm_ret_status pm_ipi_buff_read_callb(uint32_t *value, size_t count)
 {
 	size_t i;
+	size_t local_count = count;
 #if IPI_CRC_CHECK
-	uint32_t *payload_ptr = value;
-	size_t j;
-	unsigned int response_payload[PAYLOAD_ARG_CNT] = {0};
+	uint32_t crc;
 #endif
 	uintptr_t buffer_base = IPI_BUFFER_REMOTE_BASE +
 				IPI_BUFFER_TARGET_LOCAL_OFFSET +
 				IPI_BUFFER_REQ_OFFSET;
 	enum pm_ret_status ret = PM_RET_SUCCESS;
 
-	if (count > IPI_BUFFER_MAX_WORDS) {
-		count = IPI_BUFFER_MAX_WORDS;
+	if (local_count > IPI_BUFFER_MAX_WORDS) {
+		local_count = IPI_BUFFER_MAX_WORDS;
 	}
 
-	for (i = 0; i <= count; i++) {
-		*value = mmio_read_32(buffer_base + (i * PAYLOAD_ARG_SIZE));
-		value++;
+	for (i = 0; i < count; i++) {
+		value[i] = mmio_read_32(buffer_base + (i * PAYLOAD_ARG_SIZE));
 	}
 #if IPI_CRC_CHECK
-	for (j = 0; j < PAYLOAD_ARG_CNT; j++) {
-		response_payload[j] = mmio_read_32(buffer_base +
-						(j * PAYLOAD_ARG_SIZE));
-	}
-
-	if (response_payload[PAYLOAD_CRC_POS] !=
-			calculate_crc(response_payload, IPI_W0_TO_W6_SIZE)) {
-		NOTICE("ERROR in CRC response payload value:0x%x\n",
-					response_payload[PAYLOAD_CRC_POS]);
+	crc = mmio_read_32(buffer_base + (PAYLOAD_CRC_POS * PAYLOAD_ARG_SIZE));
+	if (crc != calculate_crc((uint32_t *)buffer_base, IPI_W0_TO_W6_SIZE)) {
+		NOTICE("ERROR in CRC response payload value:0x%x\n", crc);
 		ret = PM_RET_ERROR_INVALID_CRC;
 		/* Payload data is invalid as CRC validation failed
 		 * Clear the payload to avoid leakage of data to upper layers
 		 */
-		memset(payload_ptr, 0, count);
+		memset(value, 0, local_count);
 	}
 #endif
 	return ret;

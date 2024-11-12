@@ -34,7 +34,7 @@ ifdef VERSAL_NET_ATF_MEM_BASE
     $(eval $(call add_define,VERSAL_NET_ATF_MEM_BASE))
 
     ifndef VERSAL_NET_ATF_MEM_SIZE
-        $(error "VERSAL_NET_ATF_BASE defined without VERSAL_NET_ATF_SIZE")
+        $(error "VERSAL_NET_ATF_MEM_BASE defined without VERSAL_NET_ATF_MEM_SIZE")
     endif
     $(eval $(call add_define,VERSAL_NET_ATF_MEM_SIZE))
 
@@ -47,7 +47,7 @@ ifdef VERSAL_NET_BL32_MEM_BASE
     $(eval $(call add_define,VERSAL_NET_BL32_MEM_BASE))
 
     ifndef VERSAL_NET_BL32_MEM_SIZE
-        $(error "VERSAL_NET_BL32_BASE defined without VERSAL_NET_BL32_SIZE")
+        $(error "VERSAL_NET_BL32_MEM_BASE defined without VERSAL_NET_BL32_MEM_SIZE")
     endif
     $(eval $(call add_define,VERSAL_NET_BL32_MEM_SIZE))
 endif
@@ -60,7 +60,7 @@ USE_COHERENT_MEM := 0
 HW_ASSISTED_COHERENCY := 1
 
 VERSAL_NET_CONSOLE	?=	pl011
-ifeq (${VERSAL_NET_CONSOLE}, $(filter ${VERSAL_NET_CONSOLE},pl011 pl011_0 pl011_1 dcc))
+ifeq (${VERSAL_NET_CONSOLE}, $(filter ${VERSAL_NET_CONSOLE},pl011 pl011_0 pl011_1 dcc dtb none))
 else
   $(error Please define VERSAL_NET_CONSOLE)
 endif
@@ -69,6 +69,20 @@ $(eval $(call add_define_val,VERSAL_NET_CONSOLE,VERSAL_NET_CONSOLE_ID_${VERSAL_N
 
 ifdef XILINX_OF_BOARD_DTB_ADDR
 $(eval $(call add_define,XILINX_OF_BOARD_DTB_ADDR))
+endif
+
+# Runtime console in default console in DEBUG build
+ifeq ($(DEBUG), 1)
+CONSOLE_RUNTIME ?= pl011
+endif
+
+# Runtime console
+ifdef CONSOLE_RUNTIME
+ifeq (${CONSOLE_RUNTIME}, $(filter ${CONSOLE_RUNTIME},pl011 pl011_0 pl011_1 dcc dtb))
+$(eval $(call add_define_val,CONSOLE_RUNTIME,RT_CONSOLE_ID_${CONSOLE_RUNTIME}))
+else
+$(error "Please define CONSOLE_RUNTIME")
+endif
 endif
 
 # enable assert() for release/debug builds

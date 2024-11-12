@@ -119,10 +119,6 @@ ifeq (${ARM_LINUX_KERNEL_AS_BL33},1)
   endif
 endif
 
-# Use an implementation of SHA-256 with a smaller memory footprint but reduced
-# speed.
-$(eval $(call add_define,MBEDTLS_SHA256_SMALLER))
-
 # Add the build options to pack Trusted OS Extra1 and Trusted OS Extra2 images
 # in the FIP if the platform requires.
 ifneq ($(BL32_EXTRA1),)
@@ -166,6 +162,25 @@ endif
 # Enable PIE support for RESET_TO_BL31/RESET_TO_SP_MIN case
 ifneq ($(filter 1,${RESET_TO_BL31} ${RESET_TO_SP_MIN}),)
 	ENABLE_PIE			:=	1
+endif
+
+# On Arm platform, disable ARM_FW_CONFIG_LOAD_ENABLE by default.
+ARM_FW_CONFIG_LOAD_ENABLE		:= 0
+$(eval $(call assert_boolean,ARM_FW_CONFIG_LOAD_ENABLE))
+$(eval $(call add_define,ARM_FW_CONFIG_LOAD_ENABLE))
+
+# In order to enable ARM_FW_CONFIG_LOAD_ENABLE for the Arm platform, the
+# platform should be reset to BL2 (RESET_TO_BL2=1), and FW_CONFIG must be
+# specified.
+ifeq (${ARM_FW_CONFIG_LOAD_ENABLE},1)
+    ifneq (${RESET_TO_BL2},1)
+        $(error RESET_TO_BL2 must be enabled when ARM_FW_CONFIG_LOAD_ENABLE \
+            is enabled)
+    endif
+    ifeq (${FW_CONFIG},)
+        $(error FW_CONFIG must be specified when ARM_FW_CONFIG_LOAD_ENABLE \
+            is enabled)
+    endif
 endif
 
 # Disable GPT parser support, use FIP image by default
@@ -279,7 +294,7 @@ endif
 ifeq (${JUNO_AARCH32_EL3_RUNTIME},1)
 BL2_SOURCES		+=	plat/arm/common/aarch32/arm_bl2_mem_params_desc.c
 else
-ifneq (${PLAT}, corstone1000)
+ifeq ($(filter $(PLAT), corstone1000 rd1ae),)
 BL2_SOURCES		+=	plat/arm/common/${ARCH}/arm_bl2_mem_params_desc.c
 endif
 endif
@@ -364,6 +379,17 @@ ifeq (${DRTM_SUPPORT},1)
 BL31_SOURCES            +=	plat/arm/common/arm_err.c
 endif
 
+ifneq ($(filter 1,${MEASURED_BOOT} ${TRUSTED_BOARD_BOOT} ${DRTM_SUPPORT}),)
+    PLAT_INCLUDES		+=	-Iplat/arm/common	\
+					-Iinclude/drivers/auth/mbedtls
+    # Specify mbed TLS configuration file
+    ifeq (${PSA_CRYPTO},1)
+      MBEDTLS_CONFIG_FILE	?=	"<plat_arm_psa_mbedtls_config.h>"
+    else
+      MBEDTLS_CONFIG_FILE	?=	"<plat_arm_mbedtls_config.h>"
+    endif
+endif
+
 ifneq (${TRUSTED_BOARD_BOOT},0)
 
     # Include common TBB sources
@@ -377,28 +403,35 @@ ifneq (${TRUSTED_BOARD_BOOT},0)
         ifneq (${COT_DESC_IN_DTB},0)
             BL2_SOURCES	+=	lib/fconf/fconf_cot_getter.c
         else
-            BL2_SOURCES	+=	drivers/auth/tbbr/tbbr_cot_common.c
 	    # Juno has its own TBBR CoT file for BL2
-            ifneq (${PLAT},juno)
-                BL2_SOURCES	+=	drivers/auth/tbbr/tbbr_cot_bl2.c
+            ifeq (${PLAT},juno)
+                BL2_SOURCES	+=	drivers/auth/tbbr/tbbr_cot_common.c
             endif
         endif
     else ifeq (${COT},dualroot)
-        BL1_SOURCES	+=	drivers/auth/dualroot/cot.c
+        BL1_SOURCES	+=	drivers/auth/dualroot/bl1_cot.c
         ifneq (${COT_DESC_IN_DTB},0)
             BL2_SOURCES	+=	lib/fconf/fconf_cot_getter.c
-        else
-            BL2_SOURCES	+=	drivers/auth/dualroot/cot.c
         endif
     else ifeq (${COT},cca)
-        BL1_SOURCES	+=	drivers/auth/cca/cot.c
+        BL1_SOURCES	+=	drivers/auth/cca/bl1_cot.c
         ifneq (${COT_DESC_IN_DTB},0)
             BL2_SOURCES	+=	lib/fconf/fconf_cot_getter.c
-        else
-            BL2_SOURCES	+=	drivers/auth/cca/cot.c
         endif
     else
         $(error Unknown chain of trust ${COT})
+    endif
+
+    ifeq (${COT_DESC_IN_DTB},0)
+      ifeq (${COT},dualroot)
+        COTDTPATH := fdts/dualroot_cot_descriptors.dtsi
+      else ifeq (${COT},cca)
+        COTDTPATH := fdts/cca_cot_descriptors.dtsi
+      else ifeq (${COT},tbbr)
+        ifneq (${PLAT},juno)
+          COTDTPATH := fdts/tbbr_cot_descriptors.dtsi
+        endif
+      endif
     endif
 
     BL1_SOURCES		+=	${AUTH_SOURCES}					\
@@ -424,10 +457,6 @@ ifneq ($(filter 1,${MEASURED_BOOT} ${DRTM_SUPPORT}),)
     MEASURED_BOOT_MK := drivers/measured_boot/event_log/event_log.mk
     $(info Including ${MEASURED_BOOT_MK})
     include ${MEASURED_BOOT_MK}
-
-    ifneq (${MBOOT_EL_HASH_ALG}, sha256)
-        $(eval $(call add_define,TF_MBEDTLS_MBOOT_USE_SHA512))
-    endif
 
     ifeq (${MEASURED_BOOT},1)
          BL1_SOURCES		+= 	${EVENT_LOG_SOURCES}
@@ -459,16 +488,23 @@ ifeq (${RECLAIM_INIT_CODE}, 1)
     endif
 endif
 
-TRANSFER_LIST_BIN := ${BUILD_PLAT}/tl.bin
+ifneq ($(COTDTPATH),)
+        cot-dt-defines = IMAGE_BL2 $(BL2_DEFINES) $(PLAT_BL_COMMON_DEFINES)
+        cot-dt-include-dirs = $(BL2_INCLUDE_DIRS) $(PLAT_BL_COMMON_INCLUDE_DIRS)
 
-.PHONY: tl
-tl: ${HW_CONFIG}
-	@echo "  TLC     ${TRANSFER_LIST_BIN}"
-	$(Q)${PYTHON} -m tools.tlc.tlc create --fdt ${HW_CONFIG} -s ${FW_HANDOFF_SIZE} ${TRANSFER_LIST_BIN}
-	$(Q)$(eval ARM_PRELOADED_DTB_OFFSET := `tlc info --fdt-offset ${TRANSFER_LIST_BIN}`)
+        cot-dt-cpp-flags  = $(cot-dt-defines:%=-D%)
+        cot-dt-cpp-flags += $(cot-dt-include-dirs:%=-I%)
 
-ifeq (${TRANSFER_LIST}, 1)
-  ifeq (${RESET_TO_BL31}, 1)
-    bl31: tl
-  endif
+        cot-dt-cpp-flags += $(BL2_CPPFLAGS) $(PLAT_BL_COMMON_CPPFLAGS)
+        cot-dt-cpp-flags += $(CPPFLAGS) $(BL_CPPFLAGS) $(TF_CFLAGS_$(ARCH))
+        cot-dt-cpp-flags += -c -x assembler-with-cpp -E -P -o $@ $<
+
+        $(BUILD_PLAT)/$(COTDTPATH:.dtsi=.dts): $(COTDTPATH) | $$(@D)/
+		$(q)$($(ARCH)-cpp) $(cot-dt-cpp-flags)
+
+        $(BUILD_PLAT)/$(COTDTPATH:.dtsi=.c): $(BUILD_PLAT)/$(COTDTPATH:.dtsi=.dts) | $$(@D)/
+		$(if $(host-poetry),$(q)poetry -q install)
+		$(q)$(if $(host-poetry),poetry run )cot-dt2c convert-to-c $< $@
+
+        BL2_SOURCES += $(BUILD_PLAT)/$(COTDTPATH:.dtsi=.c)
 endif

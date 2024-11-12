@@ -826,11 +826,24 @@ For Cortex-X4, the following errata build flags are defined :
   feature is enabled and can assist the Kernel in the process of
   mitigation of the erratum.
 
+- ``ERRATA_X4_2726228``: This applies erratum 2726228 workaround to Cortex-X4
+  CPU. This needs to be enabled for revisions r0p0 and r0p1. It is fixed in
+  r0p2.
+
 -  ``ERRATA_X4_2740089``: This applies errata 2740089 workaround to Cortex-X4
    CPU. This needs to be enabled for revisions r0p0 and r0p1. It is fixed
    in r0p2.
 
 - ``ERRATA_X4_2763018``: This applies errata 2763018 workaround to Cortex-X4
+  CPU. This needs to be enabled for revisions r0p0 and r0p1. It is fixed in r0p2.
+
+- ``ERRATA_X4_2816013``: This applies errata 2816013 workaround to Cortex-X4
+  CPU. This needs to be enabled for revisions r0p0 and r0p1. It is fixed in r0p2.
+
+- ``ERRATA_X4_2897503``: This applies errata 2897503 workaround to Cortex-X4
+  CPU. This needs to be enabled for revisions r0p0 and r0p1. It is fixed in r0p2.
+
+- ``ERRATA_X4_3076789``: This applies errata 3076789 workaround to Cortex-X4
   CPU. This needs to be enabled for revisions r0p0 and r0p1. It is fixed in r0p2.
 
 For Cortex-A510, the following errata build flags are defined :
@@ -896,6 +909,10 @@ For Cortex-A520, the following errata build flags are defined :
    Cortex-A520 CPU. This needs to be enabled for revisions r0p0 and r0p1.
    It is still open.
 
+-  ``ERRATA_A520_2938996``: This applies errata 2938996 workaround to
+   Cortex-A520 CPU. This needs to be enabled for revisions r0p0 and r0p1.
+   It is fixed in r0p2.
+
 For Cortex-A715, the following errata build flags are defined :
 
 -  ``ERRATA_A715_2331818``: This applies errata 2331818 workaround to
@@ -928,6 +945,14 @@ For Cortex-A715, the following errata build flags are defined :
    and r1p1. It is fixed in r1p2.
 
 For Cortex-A720, the following errata build flags are defined :
+
+-  ``ERRATA_A720_2792132``: This applies errata 2792132 workaround to
+   Cortex-A720 CPU. This needs to be enabled for revisions r0p0 and r0p1.
+   It is fixed in r0p2.
+
+-  ``ERRATA_A720_2844092``: This applies errata 2844092 workaround to
+   Cortex-A720 CPU. This needs to be enabled for revisions r0p0 and r0p1.
+   It is fixed in r0p2.
 
 -  ``ERRATA_A720_2926083``: This applies errata 2926083 workaround to
    Cortex-A720 CPU. This needs to be enabled for revisions r0p0 and r0p1.

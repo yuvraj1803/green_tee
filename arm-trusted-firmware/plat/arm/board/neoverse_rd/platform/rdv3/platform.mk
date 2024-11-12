@@ -21,14 +21,26 @@ endif
 override ARM_ARCH_MAJOR			:= 8
 override ARM_ARCH_MINOR			:= 7
 
-# Image flags
-override NEED_BL1			:= yes
-override NEED_BL2			:= yes
-override NEED_BL32			:= no
-override NEED_RMM			:= no
-
 # Misc options
 override CTX_INCLUDE_AARCH32_REGS	:= 0
+
+ifeq (${PLAT_RESET_TO_BL31}, 1)
+# Support for BL31 boot flow
+override RESET_TO_BL31			:= 1
+
+# arm_common.mk sets ENABLE_PIE=1, but Makefile blocks PIE for RME
+override ENABLE_PIE			:= 0
+
+# Non Trusted Firmware parameters
+override ARM_PRELOADED_DTB_BASE		:= 0xF3000000
+override ARM_LINUX_KERNEL_AS_BL33	:= 1
+override PRELOADED_BL33_BASE		:= 0xE0000000
+
+# These are internal build flags but as of now RESET_TO_BL31 won't work without defining them
+override NEED_BL1			:= no
+override NEED_BL2			:= no
+override NEED_BL32			:= no
+endif
 
 # RD-V3 platform uses GIC-700 which is based on GICv4.1
 GIC_ENABLE_V4_EXTN			:= 1
@@ -92,6 +104,10 @@ BL2_SOURCES	+=	${PLAT_MEASURED_BOOT_SOURCES}			\
 			${RDV3_BASE}/rdv3_bl2_measured_boot.c
 endif
 
+ifeq (${PLAT_RESET_TO_BL31}, 1)
+BL31_SOURCES	+=	${RDV3_BASE}/rdv3_security.c
+endif
+
 BL31_SOURCES	+=	${NRD_CPU_SOURCES}				\
 			${MBEDTLS_SOURCES}				\
 			${RSE_COMMS_SOURCES}				\
@@ -137,3 +153,4 @@ override ENABLE_FEAT_AMU	:= 2
 override ENABLE_SVE_FOR_SWD	:= 1
 override ENABLE_SVE_FOR_NS	:= 2
 override ENABLE_FEAT_MTE2	:= 2
+override CTX_INCLUDE_SVE_REGS	:= 1

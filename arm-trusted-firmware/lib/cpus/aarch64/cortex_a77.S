@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2023, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2018-2024, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -161,13 +161,12 @@ func cortex_a77_core_pwr_dwn
 	sysreg_bit_set CORTEX_A77_CPUPWRCTLR_EL1, \
 		CORTEX_A77_CPUPWRCTLR_EL1_CORE_PWRDN_BIT
 
-	apply_erratum cortex_a77, ERRATUM(2743100), ERRATA_A77_2743100
+	apply_erratum cortex_a77, ERRATUM(2743100), ERRATA_A77_2743100, NO_GET_CPU_REV
 
 	isb
 	ret
 endfunc cortex_a77_core_pwr_dwn
 
-errata_report_shim cortex_a77
 	/* ---------------------------------------------
 	 * This function provides Cortex-A77 specific
 	 * register information for crash reporting.

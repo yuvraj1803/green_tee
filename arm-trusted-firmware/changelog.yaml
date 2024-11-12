@@ -272,6 +272,13 @@ subsections:
           - title: Corstone-1000
             scope: corstone-1000
 
+          - title: Automotive RD
+            scope: automotive_rd
+
+            subsections:
+              - title: RD-1 AE
+                scope: rd1ae
+
       - title: Aspeed
         scope: aspeed
 
@@ -805,6 +812,9 @@ subsections:
           - title: RAS
             scope: ras
 
+          - title: SIMD
+            scope: simd
+
       - title: FCONF
         scope: fconf
 
@@ -889,6 +899,9 @@ subsections:
 
       - title: Console
         scope: console
+
+      - title: Delay Timer
+        scope: delay-timer
 
       - title: Generic Clock
         scope: clk
@@ -1402,6 +1415,7 @@ subsections:
           - git-hooks
 
   - title: Tools
+    scope: tools
 
     subsections:
       - title: STM32 Image
@@ -1446,6 +1460,9 @@ subsections:
 
       - title: Transfer List Compiler
         scope: tlc
+
+      - title: Chain of Trust device tree to C source file
+        scope: cot-dt2c
 
   - title: Dependencies
     scope: deps

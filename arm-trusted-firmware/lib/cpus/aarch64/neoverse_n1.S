@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2023, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2017-2024, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -236,13 +236,11 @@ func neoverse_n1_core_pwr_dwn
 	 */
 	sysreg_bit_set NEOVERSE_N1_CPUPWRCTLR_EL1, NEOVERSE_N1_CORE_PWRDN_EN_MASK
 
-	apply_erratum neoverse_n1, ERRATUM(2743102), ERRATA_N1_2743102
+	apply_erratum neoverse_n1, ERRATUM(2743102), ERRATA_N1_2743102, NO_GET_CPU_REV
 
 	isb
 	ret
 endfunc neoverse_n1_core_pwr_dwn
-
-errata_report_shim neoverse_n1
 
 /*
  * Handle trap of EL0 IC IVAU instructions to EL3 by executing a TLB

@@ -1,8 +1,10 @@
 /*
- * Copyright (c) 2022, Arm Limited. All rights reserved.
+ * Copyright (c) 2022-2024, Arm Limited. All rights reserved.
+ * Copyright (c) 2024, NVIDIA Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
+#include <errno.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -11,7 +13,8 @@
 #include <lib/xlat_tables/xlat_tables_v2.h>
 #include <plat/common/platform.h>
 #include "rmmd_private.h"
-#include <services/rmmd_svc.h>
+#include <services/rmm_el3_token_sign.h>
+#include <smccc_helpers.h>
 
 static spinlock_t lock;
 
@@ -85,7 +88,8 @@ static int validate_buffer_params(uint64_t buf_pa, uint64_t buf_len)
 }
 
 int rmmd_attest_get_platform_token(uint64_t buf_pa, uint64_t *buf_size,
-				   uint64_t c_size)
+				   uint64_t c_size,
+				   uint64_t *remaining_len)
 {
 	int err;
 	uint8_t temp_buf[SHA512_DIGEST_SIZE];
@@ -110,9 +114,19 @@ int rmmd_attest_get_platform_token(uint64_t buf_pa, uint64_t *buf_size,
 
 	/* Get the platform token. */
 	err = plat_rmmd_get_cca_attest_token((uintptr_t)buf_pa,
-		buf_size, (uintptr_t)temp_buf, c_size);
+		buf_size, (uintptr_t)temp_buf, c_size, remaining_len);
 
-	if (err != 0) {
+	switch (err) {
+	case 0:
+		err = E_RMM_OK;
+		break;
+	case -EAGAIN:
+		err = E_RMM_AGAIN;
+		break;
+	case -EINVAL:
+		err = E_RMM_INVAL;
+		break;
+	default:
 		ERROR("Failed to get platform token: %d.\n", err);
 		err = E_RMM_UNK;
 	}
@@ -144,10 +158,110 @@ int rmmd_attest_get_signing_key(uint64_t buf_pa, uint64_t *buf_size,
 						 (unsigned int)ecc_curve);
 	if (err != 0) {
 		ERROR("Failed to get attestation key: %d.\n", err);
-		err =  E_RMM_UNK;
+		err = E_RMM_UNK;
 	}
 
 	spin_unlock(&lock);
 
 	return err;
+}
+
+static int rmmd_el3_token_sign_push_req(uint64_t buf_pa, uint64_t buf_size)
+{
+	int err;
+
+	err = validate_buffer_params(buf_pa, buf_size);
+	if (err != 0) {
+		return err;
+	}
+
+	if (buf_size < sizeof(struct el3_token_sign_request)) {
+		return E_RMM_INVAL;
+	}
+
+	spin_lock(&lock);
+
+	/* Call platform port to handle attestation toekn signing request. */
+	err = plat_rmmd_el3_token_sign_push_req((struct el3_token_sign_request *)buf_pa);
+
+	spin_unlock(&lock);
+
+	return err;
+}
+
+static int rmmd_el3_token_sign_pull_resp(uint64_t buf_pa, uint64_t buf_size)
+{
+	int err;
+
+	err = validate_buffer_params(buf_pa, buf_size);
+	if (err != 0) {
+		return err;
+	}
+
+
+	if (buf_size < sizeof(struct el3_token_sign_response)) {
+		return E_RMM_INVAL;
+	}
+
+	spin_lock(&lock);
+
+	/* Pull attestation signing response from HES. */
+	err = plat_rmmd_el3_token_sign_pull_resp(
+			(struct el3_token_sign_response *)buf_pa);
+
+	spin_unlock(&lock);
+
+	return err;
+}
+
+static int rmmd_attest_get_attest_pub_key(uint64_t buf_pa, uint64_t *buf_size,
+				   uint64_t ecc_curve)
+{
+	int err;
+
+	err = validate_buffer_params(buf_pa, *buf_size);
+	if (err != 0) {
+		return err;
+	}
+
+	if (ecc_curve != ATTEST_KEY_CURVE_ECC_SECP384R1) {
+		ERROR("Invalid ECC curve specified\n");
+		return E_RMM_INVAL;
+	}
+
+	spin_lock(&lock);
+
+	/* Get the Realm attestation public key from platform port. */
+	err = plat_rmmd_el3_token_sign_get_rak_pub(
+		(uintptr_t)buf_pa, buf_size, (unsigned int)ecc_curve);
+
+	spin_unlock(&lock);
+	if (err != 0) {
+		ERROR("Failed to get attestation public key from HES: %d.\n",
+		      err);
+		err = E_RMM_UNK;
+	}
+
+
+	return err;
+}
+
+uint64_t rmmd_el3_token_sign(void *handle, uint64_t opcode, uint64_t x2,
+				    uint64_t x3, uint64_t x4)
+{
+	int ret;
+
+	switch (opcode) {
+	case RMM_EL3_TOKEN_SIGN_PUSH_REQ_OP:
+		ret = rmmd_el3_token_sign_push_req(x2, x3);
+		SMC_RET1(handle, ret);
+	case RMM_EL3_TOKEN_SIGN_PULL_RESP_OP:
+		ret = rmmd_el3_token_sign_pull_resp(x2, x3);
+		SMC_RET1(handle, ret);
+	case RMM_EL3_TOKEN_SIGN_GET_RAK_PUB_OP:
+		ret = rmmd_attest_get_attest_pub_key(x2, &x3, x4);
+		SMC_RET2(handle, ret, x3);
+	default:
+		SMC_RET1(handle, SMC_UNK);
+	}
 }

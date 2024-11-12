@@ -84,13 +84,13 @@ endif
 # Enable the features which are mandatory from ARCH version 8.8 and upwards.
 ifeq "8.8" "$(word 1, $(sort 8.8 $(ARM_ARCH_MAJOR).$(ARM_ARCH_MINOR)))"
 # 8.7 Compliant
-armv8-7-a-feats         += ${armv8-7-a-feats}
+armv8-8-a-feats         += ${armv8-7-a-feats}
 FEAT_LIST               := ${armv8-8-a-feats}
 endif
 
 # Enable the features which are mandatory from ARCH version 8.9 and upwards.
 ifeq "8.9" "$(word 1, $(sort 8.9 $(ARM_ARCH_MAJOR).$(ARM_ARCH_MINOR)))"
-armv8-9-a-feats         := ENABLE_FEAT_TCR2 ENABLE_FEAT_DEBUGV8P9
+armv8-9-a-feats         := ENABLE_FEAT_TCR2 ENABLE_FEAT_DEBUGV8P9 ENABLE_FEAT_SCTLR2
 # 8.8 Compliant
 armv8-9-a-feats         += ${armv8-8-a-feats}
 FEAT_LIST               := ${armv8-9-a-feats}
@@ -219,6 +219,9 @@ ENABLE_FEAT_HCX			?=	0
 # Flag to enable access to TCR2 (FEAT_TCR2).
 ENABLE_FEAT_TCR2		?=	0
 
+# Flag to enable access to SCTLR2 (FEAT_SCTLR2).
+ENABLE_FEAT_SCTLR2		?=	0
+
 #
 ################################################################################
 # Optional Features defaulted to 0 or 2, if they are not enabled from
@@ -307,13 +310,6 @@ CTX_INCLUDE_NEVE_REGS			?=	0
 # registers, by setting SCR_EL3.TRNDR.
 ENABLE_FEAT_RNG_TRAP			?=	0
 
-ifeq ($(CTX_INCLUDE_MTE_REGS),1)
-        $(warning CTX_INCLUDE_MTE_REGS option is deprecated, Check ENABLE_FEAT_MTE2 usage)
-endif
-ifeq ($(ENABLE_FEAT_MTE),1)
-        $(warning ENABLE_FEAT_MTE option is deprecated, Check ENABLE_FEAT_MTE2 usage)
-endif
-
 # Enable FEAT_MTE2. This must be set to 1 if the platform wants
 # to use this feature and is enabled at ELX.
 ENABLE_FEAT_MTE2		        ?=	0
@@ -339,6 +335,16 @@ DISABLE_MTPMU				?=	0
 
 # Flag to enable FEAT_FGT2 (Fine Granular Traps 2)
 ENABLE_FEAT_FGT2			?=	0
+
+# LoadStore64Bytes extension using the ACCDATA_EL1 system register
+ENABLE_FEAT_LS64_ACCDATA		?=	0
+
+#----
+# 8.8
+#----
+
+# Flag to enable FEAT_THE (Translation Hardening Extension)
+ENABLE_FEAT_THE				?=	0
 
 #----
 # 8.9
@@ -401,6 +407,12 @@ ENABLE_SME_FOR_SWD			?=	0
 # lower ELs i.e. NS-EL2, or NS-EL1 if NS-EL2 implemented but unused
 # if FEAT_BRBE is implemented.
 ENABLE_BRBE_FOR_NS			?=	0
+
+#----
+# 9.3
+#----
+# Flag to enable access to Arm v9.3 FEAT_D128 extension
+ENABLE_FEAT_D128			?=	0
 
 #----
 #9.4

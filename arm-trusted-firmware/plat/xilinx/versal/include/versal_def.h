@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2018-2022, Arm Limited and Contributors. All rights reserved.
  * Copyright (c) 2019-2022, Xilinx, Inc. All rights reserved.
- * Copyright (c) 2022-2023, Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) 2022-2024, Advanced Micro Devices, Inc. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -18,20 +18,30 @@
 /* number of interrupt handlers. increase as required */
 #define MAX_INTR_EL3			2
 /* List all consoles */
+#define VERSAL_CONSOLE_ID_none		0
 #define VERSAL_CONSOLE_ID_pl011	1
 #define VERSAL_CONSOLE_ID_pl011_0	1
 #define VERSAL_CONSOLE_ID_pl011_1	2
 #define VERSAL_CONSOLE_ID_dcc		3
+#define VERSAL_CONSOLE_ID_dtb		4
 
 #define CONSOLE_IS(con)	(VERSAL_CONSOLE_ID_ ## con == VERSAL_CONSOLE)
 
-/* List all supported platforms */
-#define VERSAL_PLATFORM_ID_versal_virt	1
-#define VERSAL_PLATFORM_ID_spp_itr6	2
-#define VERSAL_PLATFORM_ID_emu_itr6	3
-#define VERSAL_PLATFORM_ID_silicon	4
+/* Runtime console */
+#define RT_CONSOLE_ID_pl011	1
+#define RT_CONSOLE_ID_pl011_0	1
+#define RT_CONSOLE_ID_pl011_1	2
+#define RT_CONSOLE_ID_dcc	3
+#define RT_CONSOLE_ID_dtb	4
 
-#define VERSAL_PLATFORM_IS(con)	(VERSAL_PLATFORM_ID_ ## con == VERSAL_PLATFORM)
+#define RT_CONSOLE_IS(con)	(RT_CONSOLE_ID_ ## con == CONSOLE_RUNTIME)
+
+/* List of platforms */
+#define VERSAL_SILICON              U(0)
+#define VERSAL_SPP                  U(1)
+#define VERSAL_EMU                  U(2)
+#define VERSAL_QEMU                 U(3)
+#define VERSAL_COSIM                U(7)
 
 /* Firmware Image Package */
 #define VERSAL_PRIMARY_CPU	0
@@ -64,38 +74,41 @@
 #define VERSAL_UART0_BASE		0xFF000000
 #define VERSAL_UART1_BASE		0xFF010000
 
-#if CONSOLE_IS(pl011) || CONSOLE_IS(dcc)
+#if CONSOLE_IS(pl011) || CONSOLE_IS(dtb)
 # define UART_BASE	VERSAL_UART0_BASE
+# define UART_TYPE	CONSOLE_PL011
 #elif CONSOLE_IS(pl011_1)
 # define UART_BASE	VERSAL_UART1_BASE
+# define UART_TYPE	CONSOLE_PL011
+#elif CONSOLE_IS(dcc)
+# define UART_BASE	0x0
+# define UART_TYPE	CONSOLE_DCC
+#elif CONSOLE_IS(none)
+# define UART_TYPE	CONSOLE_NONE
 #else
 # error "invalid VERSAL_CONSOLE"
+#endif
+
+/* Runtime console */
+#if defined(CONSOLE_RUNTIME)
+#if RT_CONSOLE_IS(pl011) || RT_CONSOLE_IS(dtb)
+# define RT_UART_BASE VERSAL_UART0_BASE
+# define RT_UART_TYPE	CONSOLE_PL011
+#elif RT_CONSOLE_IS(pl011_1)
+# define RT_UART_BASE VERSAL_UART1_BASE
+# define RT_UART_TYPE	CONSOLE_PL011
+#elif RT_CONSOLE_IS(dcc)
+# define RT_UART_BASE	0x0
+# define RT_UART_TYPE	CONSOLE_DCC
+#else
+# error "invalid CONSOLE_RUNTIME"
+#endif
 #endif
 
 /*******************************************************************************
  * Platform related constants
  ******************************************************************************/
-#if VERSAL_PLATFORM_IS(versal_virt)
-# define PLATFORM_NAME		"Versal Virt"
-# define UART_CLOCK	25000000
-# define UART_BAUDRATE	115200
-# define VERSAL_CPU_CLOCK	2720000
-#elif VERSAL_PLATFORM_IS(silicon)
-# define PLATFORM_NAME		"Versal Silicon"
-# define UART_CLOCK	100000000
-# define UART_BAUDRATE	115200
-# define VERSAL_CPU_CLOCK	100000000
-#elif VERSAL_PLATFORM_IS(spp_itr6)
-# define PLATFORM_NAME		"SPP ITR6"
-# define UART_CLOCK	25000000
-# define UART_BAUDRATE	115200
-# define VERSAL_CPU_CLOCK	2720000
-#elif VERSAL_PLATFORM_IS(emu_itr6)
-# define PLATFORM_NAME		"EMU ITR6"
-# define UART_CLOCK	212000
-# define UART_BAUDRATE	9600
-# define VERSAL_CPU_CLOCK	212000
-#endif
+#define UART_BAUDRATE  115200
 
 /* Access control register defines */
 #define ACTLR_EL3_L2ACTLR_BIT	(1 << 6)

@@ -14,11 +14,6 @@ To build:
 make RESET_TO_BL31=1 CROSS_COMPILE=aarch64-none-elf- PLAT=versal bl31
 ```
 
-To build ATF for different platform (supported are "silicon"(default) and "versal_virt")
-```bash
-make RESET_TO_BL31=1 CROSS_COMPILE=aarch64-none-elf- PLAT=versal VERSAL_PLATFORM=versal_virt bl31
-```
-
 To build bl32 TSP you have to rebuild bl31 too
 ```bash
 make CROSS_COMPILE=aarch64-none-elf- PLAT=versal SPD=tspd RESET_TO_BL31=1 bl31 bl32
@@ -50,11 +45,6 @@ Xilinx Versal platform specific build options
 *   `VERSAL_CONSOLE`: Select the console driver. Options:
     -   `pl011`, `pl011_0`: ARM pl011 UART 0
     -   `pl011_1`         : ARM pl011 UART 1
-
-*   `VERSAL_PLATFORM`: Select the platform. Options:
-    -   `versal_virt`	: Versal Virtual platform
-    -   `spp_itr6`	: SPP ITR6
-    -   `emu_itr6`	: EMU ITR6
 
 *   `CPU_PWRDWN_SGI`: Select the SGI for triggering CPU power down request to
                       secondary cores on receiving power down callback from
@@ -98,13 +88,26 @@ IPI SMC call ranges
 | 0xc2001000-0xc2001FFF     | Fast SMC64 SiP Service call range used for AMD-Xilinx IPI |
 +---------------------------+-----------------------------------------------------------+
 
-PM SMC call ranges
-------------------
+PM SMC call ranges for SiP SVC version 0.1
+--------------------------------------------------------
 
 +---------------------------+---------------------------------------------------------------------------+
 |   SMC Function Identifier |  Service type                                                             |
 +---------------------------+---------------------------------------------------------------------------+
 | 0xc2000000-0xc2000FFF     | Fast SMC64 SiP Service call range used for AMD-Xilinx Platform Management |
++---------------------------+---------------------------------------------------------------------------+
+
+PM SMC call ranges for SiP SVC version 0.2
+--------------------------------------------------------
+
++---------------------------+---------------------------------------------------------------------------+
+|   SMC Function Identifier |  Service type                                                             |
++---------------------------+---------------------------------------------------------------------------+
+| 0xc2000FFF                | Fast SMC64 SiP Service call used for pass-through of AMD-Xilinx Platform  |
+|                           | Management APIs to firmware                                               |
++---------------------------+---------------------------------------------------------------------------+
+| 0xc2000A00-0xc2000AFF     | Fast SMC64 SiP Service call range used for AMD-Xilinx Platform Management |
+|                           | specific TF-A APIs                                                        |
 +---------------------------+---------------------------------------------------------------------------+
 
 SMC function IDs for SiP Service queries

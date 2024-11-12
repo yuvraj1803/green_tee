@@ -31,7 +31,7 @@ const mmap_region_t plat_mmap[] = {
 	MAP_REGION_FLAT(DEVICE2_BASE, DEVICE2_SIZE, MT_DEVICE | MT_RW | MT_SECURE),
 	MAP_REGION_FLAT(CRF_BASE, CRF_SIZE, MT_DEVICE | MT_RW | MT_SECURE),
 	MAP_REGION_FLAT(IPI_BASE, IPI_SIZE, MT_DEVICE | MT_RW | MT_SECURE),
-#if defined(TRANSFER_LIST)
+#if TRANSFER_LIST
 	MAP_REGION_FLAT(FW_HANDOFF_BASE, FW_HANDOFF_BASE + FW_HANDOFF_SIZE,
 			MT_MEMORY | MT_RW | MT_NS),
 #endif
@@ -72,11 +72,11 @@ const char *board_name_decode(void)
 
 void board_detection(void)
 {
-	uint32_t version;
+	uint32_t version_type;
 
-	version = mmio_read_32(PMC_TAP_VERSION);
-	platform_id = FIELD_GET(PLATFORM_MASK, version);
-	platform_version = FIELD_GET(PLATFORM_VERSION_MASK, version);
+	version_type = mmio_read_32(PMC_TAP_VERSION);
+	platform_id = FIELD_GET(PLATFORM_MASK, version_type);
+	platform_version = FIELD_GET(PLATFORM_VERSION_MASK, version_type);
 
 	if (platform_id == QEMU_COSIM) {
 		platform_id = QEMU;

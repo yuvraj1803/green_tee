@@ -66,7 +66,6 @@ LIBMBEDTLS_SRCS		+= $(addprefix ${MBEDTLS_DIR}/library/,		\
 					)
 
 ifeq (${PSA_CRYPTO},1)
-LIBMBEDTLS_CFLAGS 	+= -Wno-error=unused-but-set-variable
 LIBMBEDTLS_SRCS         += $(addprefix ${MBEDTLS_DIR}/library/,    	\
 					psa_crypto.c                   	\
 					psa_crypto_client.c            	\
@@ -74,6 +73,8 @@ LIBMBEDTLS_SRCS         += $(addprefix ${MBEDTLS_DIR}/library/,    	\
 					psa_crypto_rsa.c               	\
 					psa_crypto_ecp.c               	\
 					psa_crypto_slot_management.c   	\
+					psa_crypto_aead.c               \
+					psa_crypto_cipher.c             \
 					psa_util.c			\
 					)
 endif
@@ -116,6 +117,14 @@ else ifeq (${HASH_ALG}, sha512)
     TF_MBEDTLS_HASH_ALG_ID	:=	TF_MBEDTLS_SHA512
 else
     TF_MBEDTLS_HASH_ALG_ID	:=	TF_MBEDTLS_SHA256
+endif
+
+ifeq (${MBOOT_EL_HASH_ALG}, sha256)
+    $(eval $(call add_define,TF_MBEDTLS_MBOOT_USE_SHA256))
+else ifeq (${MBOOT_EL_HASH_ALG}, sha384)
+    $(eval $(call add_define,TF_MBEDTLS_MBOOT_USE_SHA384))
+else ifeq (${MBOOT_EL_HASH_ALG}, sha512)
+    $(eval $(call add_define,TF_MBEDTLS_MBOOT_USE_SHA512))
 endif
 
 ifeq (${TF_MBEDTLS_KEY_ALG},ecdsa)

@@ -47,11 +47,16 @@ ifeq (${SPM_MM}, 0)
 ifeq (${CTX_INCLUDE_FPREGS}, 0)
       ENABLE_SME_FOR_NS		:= 2
       ENABLE_SME2_FOR_NS	:= 2
+else
+      ENABLE_SVE_FOR_NS		:= 0
+      ENABLE_SME_FOR_NS		:= 0
+      ENABLE_SME2_FOR_NS	:= 0
 endif
 endif
 
       ENABLE_BRBE_FOR_NS	:= 2
       ENABLE_TRBE_FOR_NS	:= 2
+      ENABLE_FEAT_D128		:= 2
 endif
 
 ENABLE_SYS_REG_TRACE_FOR_NS	:= 2
@@ -67,11 +72,15 @@ ENABLE_TRF_FOR_NS		:= 2
 ENABLE_FEAT_ECV			:= 2
 ENABLE_FEAT_FGT			:= 2
 ENABLE_FEAT_FGT2		:= 2
+ENABLE_FEAT_THE			:= 2
 ENABLE_FEAT_TCR2		:= 2
 ENABLE_FEAT_S2PIE		:= 2
 ENABLE_FEAT_S1PIE		:= 2
 ENABLE_FEAT_S2POE		:= 2
 ENABLE_FEAT_S1POE		:= 2
+ENABLE_FEAT_SCTLR2		:= 2
+ENABLE_FEAT_MTE2		:= 2
+ENABLE_FEAT_LS64_ACCDATA	:= 2
 
 # The FVP platform depends on this macro to build with correct GIC driver.
 $(eval $(call add_define,FVP_USE_GIC_DRIVER))
@@ -189,6 +198,7 @@ else
 					lib/cpus/aarch64/cortex_a710.S		\
 					lib/cpus/aarch64/cortex_a715.S		\
 					lib/cpus/aarch64/cortex_a720.S		\
+					lib/cpus/aarch64/cortex_a720_ae.S	\
 					lib/cpus/aarch64/neoverse_n_common.S	\
 					lib/cpus/aarch64/neoverse_n1.S		\
 					lib/cpus/aarch64/neoverse_n2.S		\
@@ -204,10 +214,11 @@ endif
 
 #Build AArch64-only CPUs with no FVP model yet.
 ifeq (${BUILD_CPUS_WITH_NO_FVP_MODEL},1)
-	FVP_CPU_LIBS    +=	lib/cpus/aarch64/neoverse_n3.S	\
+	FVP_CPU_LIBS    +=	lib/cpus/aarch64/neoverse_n3.S		\
 				lib/cpus/aarch64/cortex_gelas.S		\
 				lib/cpus/aarch64/nevis.S		\
-				lib/cpus/aarch64/travis.S
+				lib/cpus/aarch64/travis.S		\
+				lib/cpus/aarch64/cortex_arcadia.S
 endif
 
 else
@@ -259,7 +270,8 @@ BL2_SOURCES		+=	plat/arm/board/fvp/aarch64/fvp_helpers.S	\
 				plat/arm/board/fvp/fvp_cpu_pwr.c
 
 BL31_SOURCES		+=	plat/arm/board/fvp/fvp_plat_attest_token.c	\
-				plat/arm/board/fvp/fvp_realm_attest_key.c
+				plat/arm/board/fvp/fvp_realm_attest_key.c	\
+				plat/arm/board/fvp/fvp_el3_token_sign.c
 endif
 
 ifeq (${ENABLE_FEAT_RNG_TRAP},1)
@@ -387,9 +399,10 @@ include lib/transfer_list/transfer_list.mk
 
 ifeq ($(RESET_TO_BL31), 1)
 HW_CONFIG			:=	${FVP_HW_CONFIG}
-FW_HANDOFF_SIZE		:=	20000
+FW_HANDOFF_SIZE			:=	20000
 
-$(eval $(call add_define,ARM_PRELOADED_DTB_OFFSET))
+TRANSFER_LIST_DTB_OFFSET	:=	0x20
+$(eval $(call add_define,TRANSFER_LIST_DTB_OFFSET))
 endif
 endif
 

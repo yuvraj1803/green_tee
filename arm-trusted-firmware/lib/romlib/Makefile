@@ -4,12 +4,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-ifeq ($(filter-out clean,$(or $(MAKECMDGOALS),all)),)
-        toolchains :=
-else
-        toolchains := aarch64
-endif
-
 include ../../make_helpers/build-rules.mk
 include ../../make_helpers/common.mk
 include ../../make_helpers/toolchain.mk
@@ -45,7 +39,7 @@ endif
 
 .PHONY: all clean distclean
 
-all: $(BUILD_DIR)/romlib.bin $(LIB_DIR)/libwrappers.a
+all: $(BUILD_DIR)/romlib.bin $(BUILD_DIR)/romlib.ldflags $(LIB_DIR)/libwrappers.a
 
 %.o: %.s | $$(@D)/
 	$(s)echo "  AS      $@"
@@ -79,7 +73,7 @@ $(BUILD_DIR)/jmptbl.i: ../../$(PLAT_DIR)/jmptbl.i | $$(@D)/
 	$(s)echo "  PRE     $@"
 	$(q)$(ROMLIB_GEN) pre --output $@ --deps $(BUILD_DIR)/jmptbl.d $<
 
-$(WRAPPER_SOURCES) &: $(BUILD_DIR)/jmptbl.i | $$(@D)/
+$(WRAPPER_SOURCES) $&: $(BUILD_DIR)/jmptbl.i | $$(@D)/
 	$(s)echo "  WRP     $<"
 	$(q)$(ROMLIB_GEN) genwrappers --bti=$(ENABLE_BTI) -b $(WRAPPER_DIR) $<
 
@@ -88,6 +82,10 @@ $(WRAPPER_OBJS): $(WRAPPER_DIR)/%.o: $(WRAPPER_DIR)/%.s | $$(@D)/
 $(BUILD_DIR)/jmptbl.s: $(BUILD_DIR)/jmptbl.i | $$(@D)/
 	$(s)echo "  TBL     $@"
 	$(q)$(ROMLIB_GEN) gentbl --output $@ --bti=$(ENABLE_BTI) $<
+
+$(BUILD_DIR)/romlib.ldflags: ../../$(PLAT_DIR)/jmptbl.i | $$(@D)/
+	$(s)echo "  LDFLAGS $@"
+	$(q)$(ROMLIB_GEN) link-flags $< > $@
 
 clean:
 	$(q)rm -f $(BUILD_DIR)/*

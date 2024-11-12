@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2018-2019, Arm Limited and Contributors. All rights reserved.
  * Copyright (c) 2018-2022, Xilinx, Inc. All rights reserved.
- * Copyright (c) 2022, Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) 2022-2024, Advanced Micro Devices, Inc. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -25,7 +25,7 @@
 
 /* SiP Service Calls version numbers */
 #define SIP_SVC_VERSION_MAJOR		(0U)
-#define SIP_SVC_VERSION_MINOR		(1U)
+#define SIP_SVC_VERSION_MINOR		(2U)
 
 /* These macros are used to identify PM calls from the SMC function ID */
 #define SIP_FID_MASK	GENMASK(23, 16)
@@ -69,7 +69,7 @@ static uintptr_t sip_svc_smc_handler(uint32_t smc_fid,
 	VERBOSE("SMCID: 0x%08x, x1: 0x%016" PRIx64 ", x2: 0x%016" PRIx64 ", x3: 0x%016" PRIx64 ", x4: 0x%016" PRIx64 "\n",
 		smc_fid, x1, x2, x3, x4);
 
-	if (smc_fid & SIP_FID_MASK) {
+	if ((smc_fid & SIP_FID_MASK) != 0U) {
 		WARN("SMC out of SiP assinged range: 0x%x\n", smc_fid);
 		SMC_RET1(handle, SMC_UNK);
 	}

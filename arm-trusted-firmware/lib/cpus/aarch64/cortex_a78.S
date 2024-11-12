@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2019-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -192,13 +192,11 @@ cpu_reset_func_end cortex_a78
 func cortex_a78_core_pwr_dwn
 	sysreg_bit_set CORTEX_A78_CPUPWRCTLR_EL1, CORTEX_A78_CPUPWRCTLR_EL1_CORE_PWRDN_EN_BIT
 
-	apply_erratum cortex_a78, ERRATUM(2772019), ERRATA_A78_2772019
+	apply_erratum cortex_a78, ERRATUM(2772019), ERRATA_A78_2772019, NO_GET_CPU_REV
 
 	isb
 	ret
 endfunc cortex_a78_core_pwr_dwn
-
-errata_report_shim cortex_a78
 
 	/* ---------------------------------------------
 	 * This function provides cortex_a78 specific

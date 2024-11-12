@@ -26,6 +26,9 @@ BRANCH_PROTECTION		:=	1
 ENABLE_FEAT_MPAM		:=	1 # default is 2, optimise
 ENABLE_SVE_FOR_NS		:=	2 # to show we use it
 ENABLE_SVE_FOR_SWD		:=	1
+ENABLE_SME_FOR_NS		:=	2
+ENABLE_SME2_FOR_NS		:=	2
+ENABLE_SME_FOR_SWD		:=	1
 ENABLE_TRBE_FOR_NS		:=	1
 ENABLE_SYS_REG_TRACE_FOR_NS	:=	1
 ENABLE_FEAT_AMU			:=	1
@@ -33,7 +36,9 @@ ENABLE_AMU_FCONF		:=	1
 ENABLE_AMU_AUXILIARY_COUNTERS	:=	1
 ENABLE_MPMM			:=	1
 ENABLE_MPMM_FCONF		:=	1
-ENABLE_FEAT_MTE2	        :=	2
+ENABLE_FEAT_MTE2		:=	2
+ENABLE_SPE_FOR_NS		:=	3
+ENABLE_FEAT_TCR2		:=	3
 
 CTX_INCLUDE_AARCH32_REGS	:=	0
 
@@ -56,12 +61,16 @@ endif
 endif
 
 ifneq ($(shell expr $(TARGET_PLATFORM) \<= 1), 0)
+        $(error Platform ${PLAT}$(TARGET_PLATFORM) is no longer available.)
+endif
+
+ifneq ($(shell expr $(TARGET_PLATFORM) = 2), 0)
         $(warning Platform ${PLAT}$(TARGET_PLATFORM) is deprecated. \
           Some of the features might not work as expected)
 endif
 
-ifeq ($(shell expr $(TARGET_PLATFORM) \<= 3), 0)
-        $(error TARGET_PLATFORM must be less than or equal to 3)
+ifeq ($(shell expr $(TARGET_PLATFORM) \<= 4), 0)
+        $(error TARGET_PLATFORM must be less than or equal to 4)
 endif
 
 ifeq ($(filter ${TARGET_FLAVOUR}, fvp fpga),)
@@ -109,6 +118,9 @@ endif
 
 # CPU libraries for TARGET_PLATFORM=2
 ifeq (${TARGET_PLATFORM}, 2)
+ERRATA_A520_2938996	:=	1
+ERRATA_X4_2726228	:=	1
+
 TC_CPU_SOURCES	+=	lib/cpus/aarch64/cortex_a520.S \
 			lib/cpus/aarch64/cortex_a720.S \
 			lib/cpus/aarch64/cortex_x4.S
@@ -116,9 +128,18 @@ endif
 
 # CPU libraries for TARGET_PLATFORM=3
 ifeq (${TARGET_PLATFORM}, 3)
+ERRATA_A520_2938996	:=	1
+
 TC_CPU_SOURCES	+=	lib/cpus/aarch64/cortex_a520.S \
 			lib/cpus/aarch64/cortex_a725.S \
 			lib/cpus/aarch64/cortex_x925.S
+endif
+
+# CPU libraries for TARGET_PLATFORM=4
+ifeq (${TARGET_PLATFORM}, 4)
+TC_CPU_SOURCES	+=	lib/cpus/aarch64/cortex_gelas.S \
+			lib/cpus/aarch64/nevis.S \
+			lib/cpus/aarch64/travis.S
 endif
 
 INTERCONNECT_SOURCES	:=	${TC_BASE}/tc_interconnect.c \

@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2019-2023, Intel Corporation. All rights reserved.
+ * Copyright (c) 2024, Altera Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -24,6 +25,7 @@
 #define SOCFPGA_SYSMGR_TSN_0_ACE					0x50
 #define SOCFPGA_SYSMGR_TSN_1_ACE					0x54
 #define SOCFPGA_SYSMGR_TSN_2_ACE					0x58
+#define SOCFPGA_SYSMGR_FPGA_BRIDGE_CTRL				0x5C
 #define SOCFPGA_SYSMGR_FPGAINTF_EN_1					0x68
 #define SOCFPGA_SYSMGR_FPGAINTF_EN_2					0x6C
 #define SOCFPGA_SYSMGR_FPGAINTF_EN_3					0x70
@@ -121,7 +123,7 @@
 #define SOCFPGA_SYSMGR_BOOT_SCRATCH_COLD_8				0x220
 #define SOCFPGA_SYSMGR_BOOT_SCRATCH_COLD_9				0x224
 #define SOCFPGA_SYSMGR_MPFE_CONFIG					0x228
-#define SOCFPGA_SYSMGR_MPFE_status					0x22C
+#define SOCFPGA_SYSMGR_MPFE_STATUS					0x22C
 #define SOCFPGA_SYSMGR_BOOT_SCRATCH_WARM_0				0x230
 #define SOCFPGA_SYSMGR_BOOT_SCRATCH_WARM_1				0x234
 #define SOCFPGA_SYSMGR_BOOT_SCRATCH_WARM_2				0x238
@@ -147,6 +149,7 @@
 
 /* QSPI ECC from SDM register */
 #define SOCFPGA_ECC_QSPI_CTRL						0x08
+#define SOCFPGA_ECC_QSPI_INITSTAT					0x0C
 #define SOCFPGA_ECC_QSPI_ERRINTEN					0x10
 #define SOCFPGA_ECC_QSPI_ERRINTENS					0x14
 #define SOCFPGA_ECC_QSPI_ERRINTENR					0x18
@@ -182,11 +185,28 @@
 #define SDM								0x000A000A
 #define CORE_SIGHT_DEBUG						0x000B000B
 
+/* JTAG ID value for Agilex5 */
+#define A590_JTAG_ID							0x9000
+#define A594_JTAG_ID							0x40009000
+#define A5C0_JTAG_ID							0xC000
+#define A5C4_JTAG_ID							0x4000C000
+#define A5D0_JTAG_ID							0xD000
+#define A5D4_JTAG_ID							0x4000D000
+#define A5F0_JTAG_ID							0xC000
+#define A5F4_JTAG_ID							0x4000F000
+#define A510_JTAG_ID							0x1000
+#define A514_JTAG_ID							0x40001000
+#define A530_JTAG_ID							0x3000
+#define A534_JTAG_ID							0x40003000
+#define JTAG_ID_MASK							0xC000F000
+
 /* Field Masking */
 #define SYSMGR_SDMMC_DRVSEL(x)						(((x) & 0x7) << 0)
 #define SYSMGR_SDMMC_SMPLSEL(x)						(((x) & 0x7) << 4)
 
 #define SYSMGR_F2S_BRIDGE_CTRL_EN					BIT(0)
+#define SYSMGR_SOC_BRIDGE_CTRL_EN					BIT(0)
+#define SYSMGR_LWSOC_BRIDGE_CTRL_EN					BIT(1)
 #define IDLE_DATA_LWSOC2FPGA						BIT(4)
 #define IDLE_DATA_SOC2FPGA						BIT(0)
 #define IDLE_DATA_MASK							(IDLE_DATA_LWSOC2FPGA \

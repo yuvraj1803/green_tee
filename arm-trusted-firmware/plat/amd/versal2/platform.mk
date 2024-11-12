@@ -6,6 +6,9 @@
 
 PLAT_PATH := plat/amd/versal2
 
+override NEED_BL1 := no
+override NEED_BL2 := no
+
 # A78 Erratum for SoC
 ERRATA_A78_AE_1941500 := 1
 ERRATA_A78_AE_1951502 := 1
@@ -28,11 +31,15 @@ GICV3_SUPPORT_GIC600 := 1
 
 override CTX_INCLUDE_AARCH32_REGS    := 0
 
+# Platform to support Dynamic XLAT Table by default
+override PLAT_XLAT_TABLES_DYNAMIC := 1
+$(eval $(call add_define,PLAT_XLAT_TABLES_DYNAMIC))
+
 ifdef MEM_BASE
     $(eval $(call add_define,MEM_BASE))
 
     ifndef MEM_SIZE
-        $(error "ATF_BASE defined without ATF_SIZE")
+        $(error "MEM_BASE defined without MEM_SIZE")
     endif
     $(eval $(call add_define,MEM_SIZE))
 
@@ -45,7 +52,7 @@ ifdef BL32_MEM_BASE
     $(eval $(call add_define,BL32_MEM_BASE))
 
     ifndef BL32_MEM_SIZE
-        $(error "BL32_BASE defined without BL32_SIZE")
+        $(error "BL32_MEM_BASE defined without BL32_MEM_SIZE")
     endif
     $(eval $(call add_define,BL32_MEM_SIZE))
 endif
@@ -57,13 +64,28 @@ endif
 USE_COHERENT_MEM := 0
 HW_ASSISTED_COHERENCY := 1
 
-CONSOLE	?=	pl011
-ifeq (${CONSOLE}, $(filter ${CONSOLE},pl011 pl011_0 pl011_1 dcc))
-else
-  $(error Please define CONSOLE)
+VERSAL2_CONSOLE  ?=      pl011
+ifeq (${VERSAL2_CONSOLE}, $(filter ${VERSAL2_CONSOLE},pl011 pl011_0 pl011_1 dcc dtb none))
+	else
+	  $(error "Please define VERSAL2_CONSOLE")
+  endif
+
+$(eval $(call add_define_val,VERSAL2_CONSOLE,VERSAL2_CONSOLE_ID_${VERSAL2_CONSOLE}))
+
+# Runtime console in default console in DEBUG build
+ifeq ($(DEBUG), 1)
+CONSOLE_RUNTIME ?= pl011
 endif
 
-$(eval $(call add_define_val,CONSOLE,CONSOLE_ID_${CONSOLE}))
+# Runtime console
+ifdef CONSOLE_RUNTIME
+ifeq 	(${CONSOLE_RUNTIME}, $(filter ${CONSOLE_RUNTIME},pl011 pl011_0 pl011_1 dcc dtb))
+$(eval $(call add_define_val,CONSOLE_RUNTIME,RT_CONSOLE_ID_${CONSOLE_RUNTIME}))
+else
+	$(error "Please define CONSOLE_RUNTIME")
+endif
+endif
+
 
 ifdef XILINX_OF_BOARD_DTB_ADDR
 $(eval $(call add_define,XILINX_OF_BOARD_DTB_ADDR))
@@ -109,6 +131,9 @@ BL31_SOURCES		+=	drivers/arm/cci/cci.c				\
 BL31_SOURCES		+=	${PLAT_PATH}/plat_psci.c
 
 BL31_SOURCES		+=	plat/xilinx/common/plat_fdt.c			\
+				common/fdt_wrappers.c                           \
+				plat/xilinx/common/plat_fdt.c                   \
+				plat/xilinx/common/plat_console.c               \
 				plat/xilinx/common/plat_startup.c		\
 				plat/xilinx/common/ipi.c			\
 				plat/xilinx/common/ipi_mailbox_service/ipi_mailbox_svc.c	\
@@ -116,6 +141,7 @@ BL31_SOURCES		+=	plat/xilinx/common/plat_fdt.c			\
 				plat/xilinx/common/versal.c			\
 				${PLAT_PATH}/bl31_setup.c			\
 				common/fdt_fixup.c				\
+				common/fdt_wrappers.c				\
 				${LIBFDT_SRCS}					\
 				${PLAT_PATH}/sip_svc_setup.c			\
 				${PLAT_PATH}/gicv3.c
@@ -125,3 +151,9 @@ ifeq (${ERRATA_ABI_SUPPORT}, 1)
 CORTEX_A78_AE_H_INC     := 1
 $(eval $(call add_define, CORTEX_A78_AE_H_INC))
 endif
+
+# Enable Handoff protocol using transfer lists
+TRANSFER_LIST                   := 1
+
+include lib/transfer_list/transfer_list.mk
+BL31_SOURCES           +=      plat/xilinx/common/plat_xfer_list.c

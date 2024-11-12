@@ -1226,7 +1226,7 @@ static struct pm_clock clocks[] = {
 		.control_reg = CRF_APB_ACPU_CTRL,
 		.status_reg = 0,
 		.parents = &((int32_t []) {
-			CLK_ACPU | PARENT_CLK_NODE2 << CLK_PARENTS_ID_LEN,
+			(CLK_ACPU | (PARENT_CLK_NODE2 << CLK_PARENTS_ID_LEN)),
 			CLK_NA_PARENT
 		}),
 		.nodes = &acpu_full_nodes,
@@ -2117,7 +2117,7 @@ static struct pm_clock clocks[] = {
 		.control_reg = CRF_APB_ACPU_CTRL,
 		.status_reg = 0,
 		.parents = &((int32_t []) {
-			CLK_ACPU | PARENT_CLK_NODE2 << CLK_PARENTS_ID_LEN,
+			(CLK_ACPU | (PARENT_CLK_NODE2 << CLK_PARENTS_ID_LEN)),
 			CLK_NA_PARENT
 		}),
 		.nodes = &acpu_half_nodes,
@@ -2140,7 +2140,7 @@ static struct pm_clock clocks[] = {
 		.control_reg = CRF_APB_GPU_REF_CTRL,
 		.status_reg = 0,
 		.parents = &((int32_t []) {
-			CLK_GPU_REF | PARENT_CLK_NODE2 << CLK_PARENTS_ID_LEN,
+			(CLK_GPU_REF | (PARENT_CLK_NODE2 << CLK_PARENTS_ID_LEN)),
 			CLK_NA_PARENT
 		}),
 		.nodes = &gpu_pp0_nodes,
@@ -2151,7 +2151,7 @@ static struct pm_clock clocks[] = {
 		.control_reg = CRF_APB_GPU_REF_CTRL,
 		.status_reg = 0,
 		.parents = &((int32_t []) {
-			CLK_GPU_REF | PARENT_CLK_NODE2 << CLK_PARENTS_ID_LEN,
+			(CLK_GPU_REF | (PARENT_CLK_NODE2 << CLK_PARENTS_ID_LEN)),
 			CLK_NA_PARENT
 		}),
 		.nodes = &gpu_pp1_nodes,
@@ -2176,7 +2176,7 @@ static struct pm_clock clocks[] = {
 		.control_reg = CRL_APB_CPU_R5_CTRL,
 		.status_reg = 0,
 		.parents = &((int32_t []) {
-			CLK_CPU_R5 | PARENT_CLK_NODE2 << CLK_PARENTS_ID_LEN,
+			(CLK_CPU_R5 | (PARENT_CLK_NODE2 << CLK_PARENTS_ID_LEN)),
 			CLK_DUMMY_PARENT,
 			CLK_NA_PARENT
 		}),
@@ -2456,14 +2456,14 @@ enum pm_ret_status pm_api_clock_get_num_clocks(uint32_t *nclocks)
 void pm_api_clock_get_name(uint32_t clock_id, char *name)
 {
 	if (clock_id == CLK_MAX) {
-		memcpy(name, END_OF_CLK, sizeof(END_OF_CLK) > CLK_NAME_LEN ?
-					 CLK_NAME_LEN : sizeof(END_OF_CLK));
+		(void)memcpy(name, END_OF_CLK, ((sizeof(END_OF_CLK) > CLK_NAME_LEN) ?
+					 CLK_NAME_LEN : sizeof(END_OF_CLK)));
 	} else if ((clock_id > CLK_MAX) || (!pm_clock_valid(clock_id))) {
-		memset(name, 0, CLK_NAME_LEN);
+		(void)memset(name, 0, CLK_NAME_LEN);
 	} else if (clock_id < CLK_MAX_OUTPUT_CLK) {
-		memcpy(name, clocks[clock_id].name, CLK_NAME_LEN);
+		(void)memcpy(name, clocks[clock_id].name, CLK_NAME_LEN);
 	} else {
-		memcpy(name, ext_clocks[clock_id - CLK_MAX_OUTPUT_CLK].name,
+		(void)memcpy(name, ext_clocks[clock_id - CLK_MAX_OUTPUT_CLK].name,
 		       CLK_NAME_LEN);
 	}
 }
@@ -2486,7 +2486,7 @@ enum pm_ret_status pm_api_clock_get_topology(uint32_t clock_id,
 					     uint32_t index,
 					     uint32_t *topology)
 {
-	struct pm_clock_node *clock_nodes;
+	const struct pm_clock_node *clock_nodes;
 	uint8_t num_nodes;
 	uint32_t i;
 	uint16_t typeflags;
@@ -2499,7 +2499,7 @@ enum pm_ret_status pm_api_clock_get_topology(uint32_t clock_id,
 		return PM_RET_ERROR_NOTSUPPORTED;
 	}
 
-	memset(topology, 0, CLK_TOPOLOGY_PAYLOAD_LEN);
+	(void)memset(topology, 0, CLK_TOPOLOGY_PAYLOAD_LEN);
 	clock_nodes = *clocks[clock_id].nodes;
 	num_nodes = clocks[clock_id].num_nodes;
 
@@ -2543,7 +2543,7 @@ enum pm_ret_status pm_api_clock_get_fixedfactor_params(uint32_t clock_id,
 						       uint32_t *mul,
 						       uint32_t *div)
 {
-	struct pm_clock_node *clock_nodes;
+	const struct pm_clock_node *clock_nodes;
 	uint8_t num_nodes;
 	uint32_t type, i;
 
@@ -2598,7 +2598,7 @@ enum pm_ret_status pm_api_clock_get_parents(uint32_t clock_id,
 					    uint32_t *parents)
 {
 	uint32_t i;
-	int32_t *clk_parents;
+	const int32_t *clk_parents;
 
 	if (!pm_clock_valid(clock_id)) {
 		return PM_RET_ERROR_ARGS;
@@ -2613,7 +2613,7 @@ enum pm_ret_status pm_api_clock_get_parents(uint32_t clock_id,
 		return PM_RET_ERROR_ARGS;
 	}
 
-	memset(parents, 0, CLK_PARENTS_PAYLOAD_LEN);
+	(void)memset(parents, 0, CLK_PARENTS_PAYLOAD_LEN);
 
 	/* Skip parent till index */
 	for (i = 0; i < index; i++) {
@@ -2675,7 +2675,7 @@ enum pm_ret_status pm_api_clock_get_max_divisor(enum clock_id clock_id,
 						uint32_t *max_div)
 {
 	uint32_t i;
-	struct pm_clock_node *nodes;
+	const struct pm_clock_node *nodes;
 
 	if (clock_id >= CLK_MAX_OUTPUT_CLK) {
 		return PM_RET_ERROR_ARGS;
@@ -2684,8 +2684,8 @@ enum pm_ret_status pm_api_clock_get_max_divisor(enum clock_id clock_id,
 	nodes = *clocks[clock_id].nodes;
 	for (i = 0; i < clocks[clock_id].num_nodes; i++) {
 		if (nodes[i].type == div_type) {
-			if (CLK_DIVIDER_POWER_OF_TWO &
-					nodes[i].typeflags) {
+			if ((CLK_DIVIDER_POWER_OF_TWO &
+					nodes[i].typeflags) != 0U) {
 				*max_div = (1U << (BIT(nodes[i].width) - 1U));
 			} else {
 				*max_div = BIT(nodes[i].width) - 1U;
@@ -2789,9 +2789,9 @@ struct pm_pll *pm_clock_get_pll(enum clock_id clock_id)
 enum pm_ret_status pm_clock_get_pll_node_id(enum clock_id clock_id,
 					    enum pm_node_id *node_id)
 {
-	struct pm_pll *pll = pm_clock_get_pll(clock_id);
+	const struct pm_pll *pll = pm_clock_get_pll(clock_id);
 
-	if (pll) {
+	if (pll != NULL) {
 		*node_id = pll->nid;
 		return PM_RET_SUCCESS;
 	}
@@ -2812,10 +2812,10 @@ struct pm_pll *pm_clock_get_pll_by_related_clk(enum clock_id clock_id)
 	uint32_t i;
 
 	for (i = 0; i < ARRAY_SIZE(pm_plls); i++) {
-		if (pm_plls[i].pre_src == clock_id ||
-		    pm_plls[i].post_src == clock_id ||
-		    pm_plls[i].div2 == clock_id ||
-		    pm_plls[i].bypass == clock_id) {
+		if ((pm_plls[i].pre_src == clock_id) ||
+		    (pm_plls[i].post_src == clock_id) ||
+		    (pm_plls[i].div2 == clock_id) ||
+		    (pm_plls[i].bypass == clock_id)) {
 			return &pm_plls[i];
 		}
 	}
@@ -2883,7 +2883,7 @@ enum pm_ret_status pm_clock_pll_get_state(struct pm_pll *pll,
 	enum pm_ret_status status;
 	enum pm_pll_mode mode;
 
-	if ((pll == NULL) || !state) {
+	if ((pll == NULL) || (state == NULL)) {
 		return PM_RET_ERROR_ARGS;
 	}
 
@@ -2990,7 +2990,7 @@ enum pm_ret_status pm_clock_set_pll_mode(enum clock_id clock_id,
 {
 	struct pm_pll *pll = pm_clock_get_pll(clock_id);
 
-	if ((pll == NULL) || (mode != PLL_FRAC_MODE && mode != PLL_INT_MODE)) {
+	if ((pll == NULL) || ((mode != PLL_FRAC_MODE) && (mode != PLL_INT_MODE))) {
 		return PM_RET_ERROR_ARGS;
 	}
 	pll->mode = mode;
@@ -3011,9 +3011,9 @@ enum pm_ret_status pm_clock_set_pll_mode(enum clock_id clock_id,
 enum pm_ret_status pm_clock_get_pll_mode(enum clock_id clock_id,
 					 uint32_t *mode)
 {
-	struct pm_pll *pll = pm_clock_get_pll(clock_id);
+	const struct pm_pll *pll = pm_clock_get_pll(clock_id);
 
-	if ((pll == NULL) || !mode) {
+	if ((pll == NULL) || (mode == NULL)) {
 		return PM_RET_ERROR_ARGS;
 	}
 	*mode = pll->mode;
@@ -3052,7 +3052,7 @@ enum pm_ret_status pm_clock_id_is_valid(uint32_t clock_id)
 uint8_t pm_clock_has_div(uint32_t clock_id, enum pm_clock_div_id div_id)
 {
 	uint32_t i;
-	struct pm_clock_node *nodes;
+	const struct pm_clock_node *nodes;
 
 	if (clock_id >= CLK_MAX_OUTPUT_CLK) {
 		return 0;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023, Arm Limited. All rights reserved.
+ * Copyright (c) 2021-2024, Arm Limited. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -100,7 +100,7 @@ func neoverse_v2_core_pwr_dwn
 	 * ---------------------------------------------------
 	 */
 	sysreg_bit_set NEOVERSE_V2_CPUPWRCTLR_EL1, NEOVERSE_V2_CPUPWRCTLR_EL1_CORE_PWRDN_BIT
-	apply_erratum neoverse_v2, ERRATUM(2801372), ERRATA_V2_2801372
+	apply_erratum neoverse_v2, ERRATUM(2801372), ERRATA_V2_2801372, NO_GET_CPU_REV
 
 	isb
 	ret
@@ -116,7 +116,6 @@ cpu_reset_func_start neoverse_v2
 #endif
 cpu_reset_func_end neoverse_v2
 
-errata_report_shim neoverse_v2
 	/* ---------------------------------------------
 	 * This function provides Neoverse V2-
 	 * specific register information for crash

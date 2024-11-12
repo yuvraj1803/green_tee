@@ -22,6 +22,13 @@ directory-name = $(call decompat-path,$(dir $(call compat-path,$(1))))
 escape-shell = '$(subst ','\'',$(1))'
 
 #
+# The grouped-target symbol. Grouped targets are not supported on versions of
+# GNU Make <= 4.2, which was most recently packaged with Ubuntu 20.04.
+#
+
+& := $(if $(filter grouped-target,$(.FEATURES)),&)
+
+#
 # Upper-case a string value.
 #
 # Parameters:
@@ -100,3 +107,23 @@ bool = $(filter-out 0 n no f false,$(call lowercase,$(1)))
 #
 
 bool-01 = $(if $(call bool,$(1)),1,0)
+
+#
+# Determine whether a variable is defined or not.
+#
+# Parameters:
+#
+#   - $(1): The variable to check.
+#
+# Example usage:
+#
+#     xyz-defined := $(call defined,xyz) # <empty>
+#
+#     xyz :=
+#     xyz-defined := $(call defined,xyz) # <non-empty>
+#
+#     xyz := hello
+#     xyz-defined := $(call defined,xyz) # <non-empty>
+#
+
+defined = $(call bool,$(filter-out undefined,$(origin $(1))))

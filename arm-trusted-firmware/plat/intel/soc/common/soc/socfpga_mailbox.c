@@ -168,7 +168,7 @@ int mailbox_read_response(unsigned int *job_id, uint32_t *response,
 		}
 
 		if (MBOX_RESP_ERR(resp_data) > 0U) {
-			INFO("Error in response: %x\n", resp_data);
+			INFO("SDM response: Return Code: 0x%x\n", MBOX_RESP_ERR(resp_data));
 			return -MBOX_RESP_ERR(resp_data);
 		}
 
@@ -252,7 +252,7 @@ int mailbox_read_response_async(unsigned int *job_id, uint32_t *header,
 				return MBOX_RET_ERROR;
 			}
 
-			memcpy((uint8_t *) response,
+			memcpy_s((uint8_t *) response, *resp_len * MBOX_WORD_BYTE,
 				(uint8_t *) mailbox_resp_ctr.payload->data,
 				*resp_len * MBOX_WORD_BYTE);
 		}
@@ -337,7 +337,7 @@ int mailbox_poll_response(uint32_t job_id, uint32_t urgent, uint32_t *response,
 			}
 
 			if (MBOX_RESP_ERR(resp_data) > 0U) {
-				INFO("Error in response: %x\n", resp_data);
+				INFO("SDM response: Return Code: 0x%x\n", MBOX_RESP_ERR(resp_data));
 				return -MBOX_RESP_ERR(resp_data);
 			}
 
@@ -652,7 +652,7 @@ int intel_mailbox_get_config_status(uint32_t cmd, bool init_done)
 
 	res = response[RECONFIG_STATUS_SOFTFUNC_STATUS];
 	if ((res & SOFTFUNC_STATUS_SEU_ERROR) != 0U) {
-		ERROR("SoftFunction Status SEU ERROR\n");
+		return MBOX_CFGSTAT_STATE_ERROR_HARDWARE;
 	}
 
 	if ((res & SOFTFUNC_STATUS_CONF_DONE) == 0U) {

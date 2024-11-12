@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2023, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2017-2024, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -505,13 +505,11 @@ func cortex_a76_core_pwr_dwn
 	 */
 	sysreg_bit_set CORTEX_A76_CPUPWRCTLR_EL1, CORTEX_A76_CORE_PWRDN_EN_MASK
 
-	apply_erratum cortex_a76, ERRATUM(2743102), ERRATA_A76_2743102
+	apply_erratum cortex_a76, ERRATUM(2743102), ERRATA_A76_2743102, NO_GET_CPU_REV
 
 	isb
 	ret
 endfunc cortex_a76_core_pwr_dwn
-
-errata_report_shim cortex_a76
 
 	/* ---------------------------------------------
 	 * This function provides cortex_a76 specific

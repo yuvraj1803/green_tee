@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2018-2024, Arm Limited and Contributors. All rights reserved.
  * Copyright (c) 2018-2022, Xilinx, Inc. All rights reserved.
- * Copyright (c) 2022-2023, Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) 2022-2024, Advanced Micro Devices, Inc. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -12,6 +12,7 @@
 #include <bl31/bl31.h>
 #include <common/bl_common.h>
 #include <common/debug.h>
+#include <drivers/generic_delay_timer.h>
 #include <lib/mmio.h>
 #include <lib/xlat_tables/xlat_tables_v2.h>
 #include <plat/common/platform.h>
@@ -68,20 +69,14 @@ static inline void bl31_set_default_config(void)
 void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
 				u_register_t arg2, u_register_t arg3)
 {
+	(void)arg0;
+	(void)arg1;
+	(void)arg2;
+	(void)arg3;
 	uint64_t tfa_handoff_addr;
 	uint32_t payload[PAYLOAD_ARG_CNT], max_size = HANDOFF_PARAMS_MAX_SIZE;
 	enum pm_ret_status ret_status;
-	uint64_t addr[HANDOFF_PARAMS_MAX_SIZE];
-
-	set_cnt_freq();
-
-	setup_console();
-
-	/* Initialize the platform config for future decision making */
-	versal_config_setup();
-
-	/* Get platform related information */
-	board_detection();
+	const uint64_t addr[HANDOFF_PARAMS_MAX_SIZE];
 
 	/*
 	 * Do initial security configuration to allow DRAM/device access. On
@@ -89,6 +84,32 @@ void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
 	 * other platforms might have more programmable security devices
 	 * present.
 	 */
+	versal_config_setup();
+
+	/* Initialize the platform config for future decision making */
+	board_detection();
+
+	switch (platform_id) {
+	case VERSAL_SPP:
+		cpu_clock = 2720000;
+		break;
+	case VERSAL_EMU:
+		cpu_clock = 212000;
+		break;
+	case VERSAL_QEMU:
+	case VERSAL_SILICON:
+		cpu_clock = 100000000;
+		break;
+	default:
+		panic();
+	}
+	set_cnt_freq();
+
+	generic_delay_timer_init();
+
+	setup_console();
+
+	NOTICE("TF-A running on %s %d\n", board_name_decode(), platform_version);
 
 	/* Populate common information for BL32 and BL33 */
 	SET_PARAM_HEAD(&bl32_image_ep_info, PARAM_EP, VERSION_1, 0);
@@ -110,7 +131,7 @@ void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
 	enum xbl_handoff ret = xbl_handover(&bl32_image_ep_info,
 						  &bl33_image_ep_info,
 						  tfa_handoff_addr);
-	if (ret == XBL_HANDOFF_NO_STRUCT || ret == XBL_HANDOFF_INVAL_STRUCT) {
+	if ((ret == XBL_HANDOFF_NO_STRUCT) || (ret == XBL_HANDOFF_INVAL_STRUCT)) {
 		bl31_set_default_config();
 	} else if (ret == XBL_HANDOFF_TOO_MANY_PARTS) {
 		ERROR("BL31: Error too many partitions %u\n", ret);
@@ -132,7 +153,7 @@ int request_intr_type_el3(uint32_t id, interrupt_type_handler_t handler)
 	uint32_t i;
 
 	/* Validate 'handler' and 'id' parameters */
-	if (handler == NULL || index >= MAX_INTR_EL3) {
+	if ((handler == NULL) || (index >= MAX_INTR_EL3)) {
 		return -EINVAL;
 	}
 
@@ -154,6 +175,7 @@ int request_intr_type_el3(uint32_t id, interrupt_type_handler_t handler)
 static uint64_t rdo_el3_interrupt_handler(uint32_t id, uint32_t flags,
 					  void *handle, void *cookie)
 {
+	(void)id;
 	uint32_t intr_id;
 	uint32_t i;
 	interrupt_type_handler_t handler = NULL;

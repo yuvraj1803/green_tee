@@ -19,6 +19,8 @@
 #include <common/debug.h>
 #include <context.h>
 #include <drivers/arm/gicv3.h>
+#include <lib/cpus/cpu_ops.h>
+#include <lib/cpus/errata.h>
 #include <lib/el3_runtime/context_mgmt.h>
 #include <lib/el3_runtime/cpu_data.h>
 #include <lib/el3_runtime/pubsub_events.h>
@@ -31,7 +33,9 @@
 #include <lib/extensions/sme.h>
 #include <lib/extensions/spe.h>
 #include <lib/extensions/sve.h>
+#include <lib/extensions/sysreg128.h>
 #include <lib/extensions/sys_reg_trace.h>
+#include <lib/extensions/tcr2.h>
 #include <lib/extensions/trbe.h>
 #include <lib/extensions/trf.h>
 #include <lib/utils.h>
@@ -49,6 +53,7 @@ static void manage_extensions_nonsecure(cpu_context_t *ctx);
 static void manage_extensions_secure(cpu_context_t *ctx);
 static void manage_extensions_secure_per_world(void);
 
+#if ((IMAGE_BL1) || (IMAGE_BL31 && (!CTX_INCLUDE_EL2_REGS)))
 static void setup_el1_context(cpu_context_t *ctx, const struct entry_point_info *ep)
 {
 	u_register_t sctlr_elx, actlr_elx;
@@ -85,20 +90,16 @@ static void setup_el1_context(cpu_context_t *ctx, const struct entry_point_info 
 					| SCTLR_NTWI_BIT | SCTLR_NTWE_BIT;
 	}
 
-#if ERRATA_A75_764081
 	/*
 	 * If workaround of errata 764081 for Cortex-A75 is used then set
 	 * SCTLR_EL1.IESB to enable Implicit Error Synchronization Barrier.
 	 */
-	sctlr_elx |= SCTLR_IESB_BIT;
-#endif
+	if (errata_a75_764081_applies()) {
+		sctlr_elx |= SCTLR_IESB_BIT;
+	}
 
 	/* Store the initialised SCTLR_EL1 value in the cpu_context */
-#if (ERRATA_SPECULATIVE_AT)
-	write_ctx_reg(get_errata_speculative_at_ctx(ctx), CTX_ERRATA_SPEC_AT_SCTLR_EL1, sctlr_elx);
-#else
-	write_el1_ctx_common(get_el1_sysregs_ctx(ctx), sctlr_el1, sctlr_elx);
-#endif /* ERRATA_SPECULATIVE_AT */
+	write_ctx_sctlr_el1_reg_errata(ctx, sctlr_elx);
 
 	/*
 	 * Base the context ACTLR_EL1 on the current value, as it is
@@ -110,6 +111,7 @@ static void setup_el1_context(cpu_context_t *ctx, const struct entry_point_info 
 	actlr_elx = read_actlr_el1();
 	write_el1_ctx_common(get_el1_sysregs_ctx(ctx), actlr_el1, actlr_elx);
 }
+#endif /* (IMAGE_BL1) || (IMAGE_BL31 && (!CTX_INCLUDE_EL2_REGS)) */
 
 /******************************************************************************
  * This function performs initializations that are specific to SECURE state
@@ -142,7 +144,7 @@ static void setup_secure_context(cpu_context_t *ctx, const struct entry_point_in
 	 * Initialize EL1 context registers unless SPMC is running
 	 * at S-EL2.
 	 */
-#if !SPMD_SPM_AT_SEL2
+#if (!SPMD_SPM_AT_SEL2)
 	setup_el1_context(ctx, ep);
 #endif
 
@@ -158,7 +160,6 @@ static void setup_secure_context(cpu_context_t *ctx, const struct entry_point_in
 	if (!has_secure_perworld_init) {
 		manage_extensions_secure_per_world();
 	}
-
 }
 
 #if ENABLE_RME
@@ -180,6 +181,13 @@ static void setup_realm_context(cpu_context_t *ctx, const struct entry_point_inf
 	if (is_feat_csv2_2_supported()) {
 		/* Enable access to the SCXTNUM_ELx registers. */
 		scr_el3 |= SCR_EnSCXT_BIT;
+	}
+
+	if (is_feat_sctlr2_supported()) {
+		/* Set the SCTLR2En bit in SCR_EL3 to enable access to
+		 * SCTLR2_ELx registers.
+		 */
+		scr_el3 |= SCR_SCTLR2En_BIT;
 	}
 
 	write_ctx_reg(state, CTX_SCR_EL3, scr_el3);
@@ -260,13 +268,33 @@ static void setup_ns_context(cpu_context_t *ctx, const struct entry_point_info *
 	 */
 	scr_el3 |= get_scr_el3_from_routing_model(NON_SECURE);
 #endif
+
+	if (is_feat_the_supported()) {
+		/* Set the RCWMASKEn bit in SCR_EL3 to enable access to
+		 * RCWMASK_EL1 and RCWSMASK_EL1 registers.
+		 */
+		scr_el3 |= SCR_RCWMASKEn_BIT;
+	}
+
+	if (is_feat_sctlr2_supported()) {
+		/* Set the SCTLR2En bit in SCR_EL3 to enable access to
+		 * SCTLR2_ELx registers.
+		 */
+		scr_el3 |= SCR_SCTLR2En_BIT;
+	}
+
+	if (is_feat_d128_supported()) {
+		/* Set the D128En bit in SCR_EL3 to enable access to 128-bit
+		 * versions of TTBR0_EL1, TTBR1_EL1, RCWMASK_EL1, RCWSMASK_EL1,
+		 * PAR_EL1 and TTBR1_EL2, TTBR0_EL2 and VTTBR_EL2 registers.
+		 */
+		scr_el3 |= SCR_D128En_BIT;
+	}
+
 	write_ctx_reg(state, CTX_SCR_EL3, scr_el3);
 
-	/* Initialize EL1 context registers */
-	setup_el1_context(ctx, ep);
-
 	/* Initialize EL2 context registers */
-#if CTX_INCLUDE_EL2_REGS
+#if (CTX_INCLUDE_EL2_REGS && IMAGE_BL31)
 
 	/*
 	 * Initialize SCTLR_EL2 context register with reset value.
@@ -299,8 +327,10 @@ static void setup_ns_context(cpu_context_t *ctx, const struct entry_point_info *
 		write_el2_ctx_fgt(get_el2_sysregs_ctx(ctx), hfgwtr_el2,
 			HFGWTR_EL2_INIT_VAL);
 	}
-
-#endif /* CTX_INCLUDE_EL2_REGS */
+#else
+	/* Initialize EL1 context registers */
+	setup_el1_context(ctx, ep);
+#endif /* (CTX_INCLUDE_EL2_REGS && IMAGE_BL31) */
 
 	manage_extensions_nonsecure(ctx);
 }
@@ -331,7 +361,7 @@ static void setup_context_common(cpu_context_t *ctx, const entry_point_info_t *e
 	 * to boot correctly. However, there are very few registers where this
 	 * is not true and some values need to be recreated.
 	 */
-#if CTX_INCLUDE_EL2_REGS
+#if (CTX_INCLUDE_EL2_REGS && IMAGE_BL31)
 	el2_sysregs_t *el2_ctx = get_el2_sysregs_ctx(ctx);
 
 	/*
@@ -347,7 +377,7 @@ static void setup_context_common(cpu_context_t *ctx, const entry_point_info_t *e
 	 * and it may contain access control bits (e.g. CLUSTERPMUEN bit).
 	 */
 	write_el2_ctx_common(el2_ctx, actlr_el2, read_actlr_el2());
-#endif /* CTX_INCLUDE_EL2_REGS */
+#endif /* (CTX_INCLUDE_EL2_REGS && IMAGE_BL31) */
 
 	/* Start with a clean SCR_EL3 copy as all relevant values are set */
 	scr_el3 = SCR_RESET_VAL;
@@ -394,6 +424,15 @@ static void setup_context_common(cpu_context_t *ctx, const entry_point_info_t *e
 	 */
 	if (is_feat_hcx_supported()) {
 		scr_el3 |= SCR_HXEn_BIT;
+	}
+
+	/*
+	 * If FEAT_LS64_ACCDATA is enabled, enable access to ACCDATA_EL1 by
+	 * setting SCR_EL3.ADEn and allow the ST64BV0 instruction by setting
+	 * SCR_EL3.EnAS0.
+	 */
+	if (is_feat_ls64_accdata_supported()) {
+		scr_el3 |= SCR_ADEn_BIT | SCR_EnAS0_BIT;
 	}
 
 	/*
@@ -761,13 +800,6 @@ static void manage_extensions_common(cpu_context_t *ctx)
 		 */
 		trf_enable(ctx);
 	}
-
-	if (is_feat_brbe_supported()) {
-		/*
-		 * Enable FEAT_BRBE for Non-Secure and prohibit for Secure state.
-		 */
-		brbe_enable(ctx);
-	}
 #endif /* IMAGE_BL31 */
 }
 
@@ -791,6 +823,10 @@ static void manage_extensions_nonsecure(cpu_context_t *ctx)
 
 	if (is_feat_debugv8p9_supported()) {
 		debugv8p9_extended_bp_wp_enable(ctx);
+	}
+
+	if (is_feat_brbe_supported()) {
+		brbe_enable(ctx);
 	}
 
 	pmuv3_enable(ctx);
@@ -1071,14 +1107,16 @@ void cm_prepare_el3_exit(uint32_t security_state)
 			if ((scr_el3 & SCR_HCE_BIT) != 0U) {
 				/* Initialize SCTLR_EL2 register with reset value. */
 				sctlr_el2 = SCTLR_EL2_RES1;
-#if ERRATA_A75_764081
+
 				/*
 				 * If workaround of errata 764081 for Cortex-A75
 				 * is used then set SCTLR_EL2.IESB to enable
 				 * Implicit Error Synchronization Barrier.
 				 */
-				sctlr_el2 |= SCTLR_IESB_BIT;
-#endif
+				if (errata_a75_764081_applies()) {
+					sctlr_el2 |= SCTLR_IESB_BIT;
+				}
+
 				write_sctlr_el2(sctlr_el2);
 			} else {
 				/*
@@ -1089,11 +1127,14 @@ void cm_prepare_el3_exit(uint32_t security_state)
 			}
 		}
 	}
+#if (!CTX_INCLUDE_EL2_REGS)
+	/* Restore EL1 system registers, only when CTX_INCLUDE_EL2_REGS=0 */
 	cm_el1_sysregs_context_restore(security_state);
+#endif
 	cm_set_next_eret_context(security_state);
 }
 
-#if CTX_INCLUDE_EL2_REGS
+#if (CTX_INCLUDE_EL2_REGS && IMAGE_BL31)
 
 static void el2_sysregs_context_save_fgt(el2_sysregs_t *ctx)
 {
@@ -1306,12 +1347,13 @@ static void el2_sysregs_context_save_common(el2_sysregs_t *ctx)
 	write_el2_ctx_common(ctx, sp_el2, read_sp_el2());
 	write_el2_ctx_common(ctx, tcr_el2, read_tcr_el2());
 	write_el2_ctx_common(ctx, tpidr_el2, read_tpidr_el2());
-	write_el2_ctx_common(ctx, ttbr0_el2, read_ttbr0_el2());
 	write_el2_ctx_common(ctx, vbar_el2, read_vbar_el2());
 	write_el2_ctx_common(ctx, vmpidr_el2, read_vmpidr_el2());
 	write_el2_ctx_common(ctx, vpidr_el2, read_vpidr_el2());
 	write_el2_ctx_common(ctx, vtcr_el2, read_vtcr_el2());
-	write_el2_ctx_common(ctx, vttbr_el2, read_vttbr_el2());
+
+	write_el2_ctx_sysreg128(ctx, ttbr0_el2, read_ttbr0_el2());
+	write_el2_ctx_sysreg128(ctx, vttbr_el2, read_vttbr_el2());
 }
 
 static void el2_sysregs_context_restore_common(el2_sysregs_t *ctx)
@@ -1387,7 +1429,7 @@ void cm_el2_sysregs_context_save(uint32_t security_state)
 	if (is_feat_vhe_supported()) {
 		write_el2_ctx_vhe(el2_sysregs_ctx, contextidr_el2,
 					read_contextidr_el2());
-		write_el2_ctx_vhe(el2_sysregs_ctx, ttbr1_el2, read_ttbr1_el2());
+		write_el2_ctx_vhe_sysreg128(el2_sysregs_ctx, ttbr1_el2, read_ttbr1_el2());
 	}
 
 	if (is_feat_ras_supported()) {
@@ -1432,6 +1474,10 @@ void cm_el2_sysregs_context_save(uint32_t security_state)
 	if (is_feat_gcs_supported()) {
 		write_el2_ctx_gcs(el2_sysregs_ctx, gcscr_el2, read_gcscr_el2());
 		write_el2_ctx_gcs(el2_sysregs_ctx, gcspr_el2, read_gcspr_el2());
+	}
+
+	if (is_feat_sctlr2_supported()) {
+		write_el2_ctx_sctlr2(el2_sysregs_ctx, sctlr2_el2, read_sctlr2_el2());
 	}
 }
 
@@ -1520,8 +1566,60 @@ void cm_el2_sysregs_context_restore(uint32_t security_state)
 		write_gcscr_el2(read_el2_ctx_gcs(el2_sysregs_ctx, gcscr_el2));
 		write_gcspr_el2(read_el2_ctx_gcs(el2_sysregs_ctx, gcspr_el2));
 	}
+
+	if (is_feat_sctlr2_supported()) {
+		write_sctlr2_el2(read_el2_ctx_sctlr2(el2_sysregs_ctx, sctlr2_el2));
+	}
 }
-#endif /* CTX_INCLUDE_EL2_REGS */
+#endif /* (CTX_INCLUDE_EL2_REGS && IMAGE_BL31) */
+
+#if IMAGE_BL31
+/*********************************************************************************
+* This function allows Architecture features asymmetry among cores.
+* TF-A assumes that all the cores in the platform has architecture feature parity
+* and hence the context is setup on different core (e.g. primary sets up the
+* context for secondary cores).This assumption may not be true for systems where
+* cores are not conforming to same Arch version or there is CPU Erratum which
+* requires certain feature to be be disabled only on a given core.
+*
+* This function is called on secondary cores to override any disparity in context
+* setup by primary, this would be called during warmboot path.
+*********************************************************************************/
+void cm_handle_asymmetric_features(void)
+{
+	cpu_context_t *ctx __maybe_unused = cm_get_context(NON_SECURE);
+
+	assert(ctx != NULL);
+
+#if ENABLE_SPE_FOR_NS == FEAT_STATE_CHECK_ASYMMETRIC
+	if (is_feat_spe_supported()) {
+		spe_enable(ctx);
+	} else {
+		spe_disable(ctx);
+	}
+#endif
+
+#if ERRATA_A520_2938996 || ERRATA_X4_2726228
+	if (check_if_affected_core() == ERRATA_APPLIES) {
+		if (is_feat_trbe_supported()) {
+			trbe_disable(ctx);
+		}
+	}
+#endif
+
+#if ENABLE_FEAT_TCR2 == FEAT_STATE_CHECK_ASYMMETRIC
+	el3_state_t *el3_state = get_el3state_ctx(ctx);
+	u_register_t spsr = read_ctx_reg(el3_state, CTX_SPSR_EL3);
+
+	if (is_feat_tcr2_supported() && (GET_RW(spsr) == MODE_RW_64)) {
+		tcr2_enable(ctx);
+	} else {
+		tcr2_disable(ctx);
+	}
+#endif
+
+}
+#endif
 
 /*******************************************************************************
  * This function is used to exit to Non-secure world. If CTX_INCLUDE_EL2_REGS
@@ -1531,7 +1629,19 @@ void cm_el2_sysregs_context_restore(uint32_t security_state)
  ******************************************************************************/
 void cm_prepare_el3_exit_ns(void)
 {
-#if CTX_INCLUDE_EL2_REGS
+#if IMAGE_BL31
+	/*
+	 * Check and handle Architecture feature asymmetry among cores.
+	 *
+	 * In warmboot path secondary cores context is initialized on core which
+	 * did CPU_ON SMC call, if there is feature asymmetry in these cores handle
+	 * it in this function call.
+	 * For Symmetric cores this is an empty function.
+	 */
+	cm_handle_asymmetric_features();
+#endif
+
+#if (CTX_INCLUDE_EL2_REGS && IMAGE_BL31)
 #if ENABLE_ASSERTIONS
 	cpu_context_t *ctx = cm_get_context(NON_SECURE);
 	assert(ctx != NULL);
@@ -1542,15 +1652,19 @@ void cm_prepare_el3_exit_ns(void)
 			(el_implemented(2U) != EL_IMPL_NONE));
 #endif /* ENABLE_ASSERTIONS */
 
-	/* Restore EL2 and EL1 sysreg contexts */
+	/* Restore EL2 sysreg contexts */
 	cm_el2_sysregs_context_restore(NON_SECURE);
-	cm_el1_sysregs_context_restore(NON_SECURE);
 	cm_set_next_eret_context(NON_SECURE);
 #else
 	cm_prepare_el3_exit(NON_SECURE);
-#endif /* CTX_INCLUDE_EL2_REGS */
+#endif /* (CTX_INCLUDE_EL2_REGS && IMAGE_BL31) */
 }
 
+#if ((IMAGE_BL1) || (IMAGE_BL31 && (!CTX_INCLUDE_EL2_REGS)))
+/*******************************************************************************
+ * The next set of six functions are used by runtime services to save and restore
+ * EL1 context on the 'cpu_context' structure for the specified security state.
+ ******************************************************************************/
 static void el1_sysregs_context_save(el1_sysregs_t *ctx)
 {
 	write_el1_ctx_common(ctx, spsr_el1, read_spsr_el1());
@@ -1643,6 +1757,19 @@ static void el1_sysregs_context_save(el1_sysregs_t *ctx)
 		write_el1_ctx_gcs(ctx, gcscre0_el1, read_gcscre0_el1());
 		write_el1_ctx_gcs(ctx, gcspr_el1, read_gcspr_el1());
 		write_el1_ctx_gcs(ctx, gcspr_el0, read_gcspr_el0());
+	}
+
+	if (is_feat_the_supported()) {
+		write_el1_ctx_the(ctx, rcwmask_el1, read_rcwmask_el1());
+		write_el1_ctx_the(ctx, rcwsmask_el1, read_rcwsmask_el1());
+	}
+
+	if (is_feat_sctlr2_supported()) {
+		write_el1_ctx_sctlr2(ctx, sctlr2_el1, read_sctlr2_el1());
+	}
+
+	if (is_feat_ls64_accdata_supported()) {
+		write_el1_ctx_ls64(ctx, accdata_el1, read_accdata_el1());
 	}
 }
 
@@ -1739,12 +1866,24 @@ static void el1_sysregs_context_restore(el1_sysregs_t *ctx)
 		write_gcspr_el1(read_el1_ctx_gcs(ctx, gcspr_el1));
 		write_gcspr_el0(read_el1_ctx_gcs(ctx, gcspr_el0));
 	}
+
+	if (is_feat_the_supported()) {
+		write_rcwmask_el1(read_el1_ctx_the(ctx, rcwmask_el1));
+		write_rcwsmask_el1(read_el1_ctx_the(ctx, rcwsmask_el1));
+	}
+
+	if (is_feat_sctlr2_supported()) {
+		write_sctlr2_el1(read_el1_ctx_sctlr2(ctx, sctlr2_el1));
+	}
+
+	if (is_feat_ls64_accdata_supported()) {
+		write_accdata_el1(read_el1_ctx_ls64(ctx, accdata_el1));
+	}
 }
 
 /*******************************************************************************
- * The next four functions are used by runtime services to save and restore
- * EL1 context on the 'cpu_context' structure for the specified security
- * state.
+ * The next couple of functions are used by runtime services to save and restore
+ * EL1 context on the 'cpu_context' structure for the specified security state.
  ******************************************************************************/
 void cm_el1_sysregs_context_save(uint32_t security_state)
 {
@@ -1779,6 +1918,8 @@ void cm_el1_sysregs_context_restore(uint32_t security_state)
 		PUBLISH_EVENT(cm_entering_normal_world);
 #endif
 }
+
+#endif /* ((IMAGE_BL1) || (IMAGE_BL31 && (!CTX_INCLUDE_EL2_REGS))) */
 
 /*******************************************************************************
  * This function populates ELR_EL3 member of 'cpu_context' pertaining to the

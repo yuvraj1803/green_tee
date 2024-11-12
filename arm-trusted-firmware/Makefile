@@ -32,28 +32,22 @@ include ${MAKE_HELPERS_DIRECTORY}common.mk
 ################################################################################
 
 include ${MAKE_HELPERS_DIRECTORY}defaults.mk
+include ${MAKE_HELPERS_DIRECTORY}plat_helpers.mk
+
+# To be able to set platform specific defaults
+ifneq ($(PLAT_DEFAULTS_MAKEFILE_FULL),)
+include ${PLAT_DEFAULTS_MAKEFILE_FULL}
+endif
 
 ################################################################################
 # Configure the toolchains used to build TF-A and its tools
 ################################################################################
-
-#
-# The clean and check targets do not behave correctly if the user's environment
-# does not appropriately configure a toolchain. While we try to find a permanent
-# solution to this, do not try to detect any toolchains if we are building
-# exclusively with targets which do not use any toolchain tools.
-#
-
-ifeq ($(filter-out check% %clean doc %tool,$(or $(MAKECMDGOALS),all)),)
-        toolchains :=
-endif
 
 include ${MAKE_HELPERS_DIRECTORY}toolchain.mk
 
 # Assertions enabled for DEBUG builds by default
 ENABLE_ASSERTIONS		:= ${DEBUG}
 ENABLE_PMF			:= ${ENABLE_RUNTIME_INSTRUMENTATION}
-PLAT				:= ${DEFAULT_PLAT}
 
 ################################################################################
 # Checkpatch script options
@@ -262,10 +256,12 @@ WARNINGS	+=		-Wunused-but-set-variable -Wmaybe-uninitialized	\
 				-Wlogical-op
 
 # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105523
-TF_CFLAGS		+= 	$(call cc_option, --param=min-pagesize=0)
+TF_CFLAGS_MIN_PAGE_SIZE	:=	$(call cc_option, --param=min-pagesize=0)
+TF_CFLAGS		+=	$(TF_CFLAGS_MIN_PAGE_SIZE)
 
 ifeq ($(HARDEN_SLS), 1)
-        TF_CFLAGS_aarch64       +=      $(call cc_option, -mharden-sls=all)
+        TF_CFLAGS_MHARDEN_SLS	:=      $(call cc_option, -mharden-sls=all)
+        TF_CFLAGS_aarch64	+=      $(TF_CFLAGS_MHARDEN_SLS)
 endif
 
 else
@@ -288,7 +284,7 @@ ASFLAGS			+=	$(CPPFLAGS)                 			\
 TF_CFLAGS		+=	$(CPPFLAGS) $(TF_CFLAGS_$(ARCH))		\
 				-ffunction-sections -fdata-sections		\
 				-ffreestanding -fno-builtin -fno-common		\
-				-O0 -std=gnu99
+				-Os -std=gnu99
 
 ifeq (${SANITIZE_UB},on)
 	TF_CFLAGS	+=	-fsanitize=undefined -fno-sanitize-recover
@@ -418,7 +414,6 @@ include common/backtrace/backtrace.mk
 ################################################################################
 # Generic definitions
 ################################################################################
-include ${MAKE_HELPERS_DIRECTORY}plat_helpers.mk
 
 ifeq (${BUILD_BASE},)
      BUILD_BASE		:=	./build
@@ -453,6 +448,9 @@ ifneq (${SPD},none)
 			CTX_INCLUDE_EL2_REGS := 1
 			ifeq ($(SPMC_AT_EL3),1)
                                 $(error SPM cannot be enabled in both S-EL2 and EL3.)
+			endif
+			ifeq ($(CTX_INCLUDE_SVE_REGS),1)
+                                $(error SVE context management not needed with Hafnium SPMC.)
 			endif
 		endif
 
@@ -601,17 +599,9 @@ endif #(SUPPORT_STACK_MEMTAG)
 ################################################################################
 # FEAT_RME
 ifeq (${ENABLE_RME},1)
-	# RME doesn't support BRBE
-	ENABLE_BRBE_FOR_NS := 0
-
 	# RME doesn't support PIE
 	ifneq (${ENABLE_PIE},0)
                 $(error ENABLE_RME does not support PIE)
-	endif
-
-	# RME doesn't support BRBE
-	ifneq (${ENABLE_BRBE_FOR_NS},0)
-                $(error ENABLE_RME does not support BRBE.)
 	endif
 
 	# RME requires AARCH64
@@ -655,6 +645,13 @@ ifeq (${CTX_INCLUDE_EL2_REGS}, 1)
                         or RME is enabled)
 		endif
 	endif
+endif
+
+################################################################################
+# Make 128-Bit sysreg read/writes availabe when FEAT_D128 is enabled.
+################################################################################
+ifneq (${ENABLE_FEAT_D128}, 0)
+        BL_COMMON_SOURCES       +=      lib/extensions/sysreg128/sysreg128.S
 endif
 
 ################################################################################
@@ -972,25 +969,52 @@ ifeq (${ENABLE_SME_FOR_SWD},1)
 	endif
 endif #(ENABLE_SME_FOR_SWD)
 
+# Enabling SVE for SWD requires enabling SVE for NWD due to ENABLE_FEAT
+# mechanism.
 ifeq (${ENABLE_SVE_FOR_SWD},1)
-	ifeq (${ENABLE_SVE_FOR_NS},0)
-                $(error "ENABLE_SVE_FOR_SWD requires ENABLE_SVE_FOR_NS")
-	endif
-endif #(ENABLE_SVE_FOR_SWD)
+    ifeq (${ENABLE_SVE_FOR_NS},0)
+        $(error "ENABLE_SVE_FOR_SWD requires ENABLE_SVE_FOR_NS")
+    endif
+endif
 
-# SVE and SME cannot be used with CTX_INCLUDE_FPREGS since secure manager does
-# its own context management including FPU registers.
+# Enabling SVE for both the worlds typically requires the context
+# management of SVE registers. The only exception being SPMC at S-EL2.
+ifeq (${ENABLE_SVE_FOR_SWD}, 1)
+    ifneq (${ENABLE_SVE_FOR_NS}, 0)
+        ifeq (${CTX_INCLUDE_SVE_REGS}-$(SPMD_SPM_AT_SEL2),0-0)
+            $(warning "ENABLE_SVE_FOR_SWD and ENABLE_SVE_FOR_NS together require CTX_INCLUDE_SVE_REGS")
+        endif
+    endif
+endif
+
+# Enabling SVE in either world while enabling CTX_INCLUDE_FPREGS requires
+# CTX_INCLUDE_SVE_REGS to be enabled due to architectural dependency between FP
+# and SVE registers.
+ifeq (${CTX_INCLUDE_FPREGS}, 1)
+    ifneq (${ENABLE_SVE_FOR_NS},0)
+        ifeq (${CTX_INCLUDE_SVE_REGS},0)
+	    # Warning instead of error due to CI dependency on this
+            $(warning "CTX_INCLUDE_FPREGS and ENABLE_SVE_FOR_NS together require CTX_INCLUDE_SVE_REGS")
+            $(warning "Forced ENABLE_SVE_FOR_NS=0")
+	    override ENABLE_SVE_FOR_NS	:= 0
+        endif
+    endif
+endif #(CTX_INCLUDE_FPREGS)
+
+# SVE context management is only required if secure world has access to SVE/FP
+# functionality.
+ifeq (${CTX_INCLUDE_SVE_REGS},1)
+    ifeq (${ENABLE_SVE_FOR_SWD},0)
+        $(error "CTX_INCLUDE_SVE_REGS requires ENABLE_SVE_FOR_SWD to also be enabled")
+    endif
+endif
+
+# SME cannot be used with CTX_INCLUDE_FPREGS since SPM does its own context
+# management including FPU registers.
 ifeq (${CTX_INCLUDE_FPREGS},1)
-	ifneq (${ENABLE_SME_FOR_NS},0)
-                $(error "ENABLE_SME_FOR_NS cannot be used with CTX_INCLUDE_FPREGS")
-	endif
-
-	ifeq (${ENABLE_SVE_FOR_NS},1)
-		# Warning instead of error due to CI dependency on this
-                $(warning "ENABLE_SVE_FOR_NS cannot be used with CTX_INCLUDE_FPREGS")
-                $(warning "Forced ENABLE_SVE_FOR_NS=0")
-		override ENABLE_SVE_FOR_NS	:= 0
-	endif
+    ifneq (${ENABLE_SME_FOR_NS},0)
+        $(error "ENABLE_SME_FOR_NS cannot be used with CTX_INCLUDE_FPREGS")
+    endif
 endif #(CTX_INCLUDE_FPREGS)
 
 ifeq ($(DRTM_SUPPORT),1)
@@ -1127,6 +1151,7 @@ $(eval $(call assert_booleans,\
 	CREATE_KEYS \
 	CTX_INCLUDE_AARCH32_REGS \
 	CTX_INCLUDE_FPREGS \
+	CTX_INCLUDE_SVE_REGS \
 	CTX_INCLUDE_EL2_REGS \
 	CTX_INCLUDE_MPAM_REGS \
 	DEBUG \
@@ -1153,6 +1178,7 @@ $(eval $(call assert_booleans,\
 	HW_ASSISTED_COHERENCY \
 	MEASURED_BOOT \
 	DICE_PROTECTION_ENVIRONMENT \
+	RMMD_ENABLE_EL3_TOKEN_SIGN \
 	DRTM_SUPPORT \
 	NS_TIMER_SWITCH \
 	OVERRIDE_LIBC \
@@ -1165,6 +1191,8 @@ $(eval $(call assert_booleans,\
 	SEPARATE_CODE_AND_RODATA \
 	SEPARATE_BL2_NOLOAD_REGION \
 	SEPARATE_NOBITS_REGION \
+	SEPARATE_RWDATA_REGION \
+	SEPARATE_SIMD_SECTION \
 	SPIN_ON_BL1_EXIT \
 	SPM_MM \
 	SPMC_AT_EL3 \
@@ -1232,17 +1260,21 @@ $(eval $(call assert_numerics,\
 	ENABLE_FEAT_FGT \
 	ENABLE_FEAT_FGT2 \
 	ENABLE_FEAT_HCX \
+	ENABLE_FEAT_LS64_ACCDATA \
 	ENABLE_FEAT_MTE2 \
 	ENABLE_FEAT_PAN \
 	ENABLE_FEAT_RNG \
 	ENABLE_FEAT_RNG_TRAP \
 	ENABLE_FEAT_SEL2 \
 	ENABLE_FEAT_TCR2 \
+	ENABLE_FEAT_THE \
 	ENABLE_FEAT_SB \
 	ENABLE_FEAT_S2PIE \
 	ENABLE_FEAT_S1PIE \
 	ENABLE_FEAT_S2POE \
 	ENABLE_FEAT_S1POE \
+	ENABLE_FEAT_SCTLR2 \
+	ENABLE_FEAT_D128 \
 	ENABLE_FEAT_GCS \
 	ENABLE_FEAT_VHE \
 	ENABLE_FEAT_MPAM \
@@ -1285,6 +1317,7 @@ $(eval $(call add_defines,\
 	COLD_BOOT_SINGLE_CPU \
 	CTX_INCLUDE_AARCH32_REGS \
 	CTX_INCLUDE_FPREGS \
+	CTX_INCLUDE_SVE_REGS \
 	CTX_INCLUDE_PAUTH_REGS \
 	CTX_INCLUDE_MPAM_REGS \
 	EL3_EXCEPTION_HANDLING \
@@ -1305,6 +1338,7 @@ $(eval $(call add_defines,\
 	ENABLE_PMF \
 	ENABLE_PSCI_STAT \
 	ENABLE_RME \
+	RMMD_ENABLE_EL3_TOKEN_SIGN \
 	ENABLE_RUNTIME_INSTRUMENTATION \
 	ENABLE_SME_FOR_NS \
 	ENABLE_SME2_FOR_NS \
@@ -1337,6 +1371,8 @@ $(eval $(call add_defines,\
 	SEPARATE_CODE_AND_RODATA \
 	SEPARATE_BL2_NOLOAD_REGION \
 	SEPARATE_NOBITS_REGION \
+	SEPARATE_RWDATA_REGION \
+	SEPARATE_SIMD_SECTION \
 	RECLAIM_INIT_CODE \
 	SPD_${SPD} \
 	SPIN_ON_BL1_EXIT \
@@ -1390,12 +1426,16 @@ $(eval $(call add_defines,\
 	ENABLE_FEAT_VHE \
 	ENABLE_FEAT_CSV2_2 \
 	ENABLE_FEAT_CSV2_3 \
+	ENABLE_FEAT_LS64_ACCDATA \
 	ENABLE_FEAT_PAN \
 	ENABLE_FEAT_TCR2 \
+	ENABLE_FEAT_THE \
 	ENABLE_FEAT_S2PIE \
 	ENABLE_FEAT_S1PIE \
 	ENABLE_FEAT_S2POE \
 	ENABLE_FEAT_S1POE \
+	ENABLE_FEAT_SCTLR2 \
+	ENABLE_FEAT_D128 \
 	ENABLE_FEAT_GCS \
 	ENABLE_FEAT_MTE2 \
 	FEATURE_DETECTION \
@@ -1462,7 +1502,7 @@ endif #(SPD)
 # Build targets
 ################################################################################
 
-.PHONY:	all msg_start clean realclean distclean cscope locate-checkpatch checkcodebase checkpatch fiptool sptool fip sp fwu_fip certtool dtbs memmap doc enctool
+.PHONY:	all msg_start clean realclean distclean cscope locate-checkpatch checkcodebase checkpatch fiptool sptool fip sp tl fwu_fip certtool dtbs memmap doc enctool
 .SUFFIXES:
 
 all: msg_start
@@ -1634,11 +1674,10 @@ checkpatch:		locate-checkpatch
 	for commit in `git rev-list --no-merges $$COMMON_COMMIT..HEAD`;	\
 	do								\
 		printf "\n[*] Checking style of '$$commit'\n\n";	\
-		git log --format=email "$$commit~..$$commit"		\
-			-- ${CHECK_PATHS} |				\
-			${CHECKPATCH} ${CHECKPATCH_OPTS} - || true;	\
-		git diff --format=email "$$commit~..$$commit"		\
-			-- ${CHECK_PATHS} |				\
+		( git log --format=email "$$commit~..$$commit"		\
+			-- ${CHECK_PATHS} ;				\
+		  git diff --format=email "$$commit~..$$commit"		\
+			-- ${CHECK_PATHS}; ) |				\
 			${CHECKPATCH}  ${CHECKPATCH_OPTS} - || true;	\
 	done
 
@@ -1690,7 +1729,7 @@ fwu_fip: ${BUILD_PLAT}/${FWU_FIP_NAME}
 
 ${FIPTOOL}: FORCE
 ifdef UNIX_MK
-	$(q)${MAKE} CPPFLAGS="-DVERSION='\"${VERSION_STRING}\"'" FIPTOOL=${FIPTOOL} OPENSSL_DIR=${OPENSSL_DIR} DEBUG=${DEBUG} --no-print-directory -C ${FIPTOOLPATH} all
+	$(q)${MAKE} PLAT=${PLAT} CPPFLAGS="-DVERSION='\"${VERSION_STRING}\"'" FIPTOOL=${FIPTOOL} OPENSSL_DIR=${OPENSSL_DIR} DEBUG=${DEBUG} --no-print-directory -C ${FIPTOOLPATH} all
 else
 # Clear the MAKEFLAGS as we do not want
 # to pass the gnumake flags to nmake.
@@ -1708,6 +1747,11 @@ else
 	$(q)set PYTHONPATH=${CURDIR}/tools/memory && \
 		${PYTHON} -m memory.memmap -sr ${BUILD_PLAT}
 endif
+
+tl: ${BUILD_PLAT}/tl.bin
+${BUILD_PLAT}/tl.bin: ${HW_CONFIG}
+	$(if $(host-poetry),$(q)poetry -q install)
+	$(q)$(if $(host-poetry),poetry run )tlc create --fdt $< -s ${FW_HANDOFF_SIZE} $@
 
 doc:
 	$(s)echo "  BUILD DOCUMENTATION"

@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2019-2024, ARM Limited and Contributors. All rights reserved.
  * Copyright (c) 2019-2023, Intel Corporation. All rights reserved.
+ * Copyright (c) 2024, Altera Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -17,6 +18,7 @@
 #include <lib/xlat_tables/xlat_tables_v2.h>
 #include <plat/common/platform.h>
 
+#include "agilex5_cache.h"
 #include "agilex5_power_manager.h"
 #include "ccu/ncore_ccu.h"
 #include "socfpga_mailbox.h"
@@ -56,9 +58,8 @@ void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
 	mmio_write_64(PLAT_SEC_ENTRY, PLAT_SEC_WARM_ENTRY);
 
 	console_16550_register(PLAT_INTEL_UART_BASE, PLAT_UART_CLOCK,
-	PLAT_BAUDRATE, &console);
+			       PLAT_BAUDRATE, &console);
 
-	init_ncore_ccu();
 	setup_smmu_stream_id();
 
 	/*
@@ -189,11 +190,12 @@ void bl31_plat_arch_setup(void)
 	uint32_t boot_core = 0x00;
 	uint32_t cpuid = 0x00;
 
-	cpuid = read_mpidr();
-	boot_core = (mmio_read_32(AGX5_PWRMGR(MPU_BOOTCONFIG)) & 0xC00);
+	cpuid = MPIDR_AFFLVL1_VAL(read_mpidr());
+	boot_core = ((mmio_read_32(AGX5_PWRMGR(MPU_BOOTCONFIG)) & 0xC00) >> 10);
 	NOTICE("BL31: Boot Core = %x\n", boot_core);
 	NOTICE("BL31: CPU ID = %x\n", cpuid);
-
+	INFO("BL31: Invalidate Data cache\n");
+	invalidate_dcache_all();
 }
 
 /* Get non-secure image entrypoint for BL33. Zephyr and Linux */
@@ -231,6 +233,9 @@ void bl31_plat_set_secondary_cpu_entrypoint(unsigned int cpu_id)
 	unsigned int pchctlr_old = 0x00;
 	unsigned int pchctlr_new = 0x00;
 	uint32_t boot_core = 0x00;
+
+	/* Store magic number for SMP secondary cores boot */
+	mmio_write_32(L2_RESET_DONE_REG, SMP_SEC_CORE_BOOT_REQ);
 
 	boot_core = (mmio_read_32(AGX5_PWRMGR(MPU_BOOTCONFIG)) & 0xC00);
 	/* Update the p-channel based on cpu id */

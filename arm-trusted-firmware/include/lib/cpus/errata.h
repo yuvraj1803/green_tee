@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2023, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2017-2024, Arm Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -25,11 +25,28 @@
 #define ERRATUM_MITIGATED	ERRATUM_CHOSEN + ERRATUM_CHOSEN_SIZE
 #define ERRATUM_ENTRY_SIZE	ERRATUM_MITIGATED + ERRATUM_MITIGATED_SIZE
 
+/* Errata status */
+#define ERRATA_NOT_APPLIES	0
+#define ERRATA_APPLIES		1
+#define ERRATA_MISSING		2
+
 #ifndef __ASSEMBLER__
 #include <lib/cassert.h>
 
 void print_errata_status(void);
-void errata_print_msg(unsigned int status, const char *cpu, const char *id);
+
+#if ERRATA_A75_764081
+bool errata_a75_764081_applies(void);
+#else
+static inline bool errata_a75_764081_applies(void)
+{
+       return false;
+}
+#endif
+
+#if ERRATA_A520_2938996 || ERRATA_X4_2726228
+unsigned int check_if_affected_core(void);
+#endif
 
 /*
  * NOTE that this structure will be different on AArch32 and AArch64. The
@@ -73,11 +90,6 @@ CASSERT(sizeof(struct erratum_entry) == ERRATUM_ENTRY_SIZE,
 #define ERRATUM_ALWAYS_CHOSEN	1
 
 #endif /* __ASSEMBLER__ */
-
-/* Errata status */
-#define ERRATA_NOT_APPLIES	0
-#define ERRATA_APPLIES		1
-#define ERRATA_MISSING		2
 
 /* Macro to get CPU revision code for checking errata version compatibility. */
 #define CPU_REV(r, p)		((r << 4) | p)
