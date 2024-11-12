@@ -7,3 +7,6 @@
 [submodule "arm-trusted-firmware"]
 	path = arm-trusted-firmware
 	url = https://github.com/ARM-software/arm-trusted-firmware.git
+[submodule "linux"]
+	path = linux
+	url = https://github.com/torvalds/linux.git
