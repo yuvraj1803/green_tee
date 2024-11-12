@@ -1,3 +1,5 @@
 *.o
 *.so
 *.ext4
+*.bin
+*.elf
