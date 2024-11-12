@@ -66,7 +66,8 @@ LINUX_FLAGS ?= \
 
 .PHONY: linux
 linux: buildroot
-	cd linux && make defconfig && make $(LINUX_FLAGS) Image
+	cp configs/linux_config linux/.config
+	cd linux && make $(LINUX_FLAGS) Image
 	cp buildroot/output/images/rootfs.ext4 linux/
 clean_linux:
 	cd linux && make clean
