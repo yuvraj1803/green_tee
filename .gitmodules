@@ -8,3 +8,7 @@
 	path = arm-trusted-firmware
 	url = https://www.github.com/yuvraj1803/arm-trusted-firmware.git
 	branch = green_tee_tfa
+[submodule "linux"]
+	path = linux
+	url = https://www.github.com/yuvraj1803/linux.git
+	branch = green_tee_linux
