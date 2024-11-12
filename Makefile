@@ -17,8 +17,7 @@ clean_tee:
 # U-Boot
 .PHONY: u-boot
 u-boot:
-	cp configs/u-boot_config u-boot/.config
-	cd u-boot && make -j$(NPROC)
+	cd u-boot && make qemu_arm64_defconfig && make -j$(NPROC)
 
 clean_u-boot:
 	cd u-boot && make clean
@@ -48,14 +47,13 @@ tfa: linux u-boot tee
 	cd arm-trusted-firmware && make $(TFA_FLAGS) all fip
 	cp $(TFA_BUILD_PATH)/qemu_fw.bios $(TFA_BUILD_PATH)/../
 clean_tfa:
-	rm $(TFA_BUILD_PATH)/../qemu_fw.bios
+	rm -f $(TFA_BUILD_PATH)/../qemu_fw.bios
 	cd arm-trusted-firmware && make clean
 
 # Buildroot
 .PHONY: buildroot
 buildroot:
-	cp configs/buildroot_config buildroot/
-	cd buildroot/ && make -j$(NPROC)
+	cd buildroot/ && make qemu_aarch64_virt_defconfig && make -j$(NPROC)
 clean_buildroot:
 	cd buildroot/ && make clean
 
@@ -73,7 +71,7 @@ linux: buildroot
 	cp buildroot/output/images/rootfs.ext4 linux/
 clean_linux:
 	cd linux && make clean
-	rm linux/rootfs.ext4
+	rm -f linux/rootfs.ext4
 
 # Client
 .PHONY: client
