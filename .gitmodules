@@ -4,3 +4,7 @@
 [submodule "buildroot"]
 	path = buildroot
 	url = https://github.com/buildroot/buildroot.git
+[submodule "arm-trusted-firmware"]
+	path = arm-trusted-firmware
+	url = https://www.github.com/yuvraj1803/arm-trusted-firmware.git
+	branch = green_tee_tfa
