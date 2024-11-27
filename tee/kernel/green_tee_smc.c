@@ -60,7 +60,9 @@ void green_tee_smc_handler(uint64_t smc_fid, uint64_t x1, uint64_t x2, uint64_t 
 			}
 
 			char* str = (char*) x1;
-			printf("String from NS-EL0: %s\n", str);
+			LOG("String from NS-EL0: %s\n", str);
+
+			LOG("GREEN_TEE_SMC_LINUX_PRINT SMC Handled\n");
 
 			break;
 
@@ -77,6 +79,8 @@ void green_tee_smc_handler(uint64_t smc_fid, uint64_t x1, uint64_t x2, uint64_t 
 			otp_enc_buffer((uint64_t*) str, 4096);
 
 			mmu_enable();
+
+			LOG("GREEN_TEE_SMC_LINUX_ENCRYPT SMC Handled\n");
 
 			break;
 		
@@ -95,6 +99,8 @@ void green_tee_smc_handler(uint64_t smc_fid, uint64_t x1, uint64_t x2, uint64_t 
 			otp_dec_buffer((uint64_t*) str, 4096);
 			mmu_enable();
 			break;
+
+			LOG("GREEN_TEE_LINUX_DECRYPT SMC Handled\n");
 
 		default:
 			LOG("SMC Failed To Handle\n", smc_fid);
@@ -119,10 +125,14 @@ void green_tee_smc_entry_done(green_tee_vector_table_t* vector_table){
     memset(params.args, 0, sizeof(params.args));
 	params.args[1] = (uint64_t) vector_table;
 
+	LOG("Green TEE Entry Done. Returning to SPD for normal world boot.\n");
+
+
 	arm_smccc_call(&params, &ret);
 
 	if(ret.call_failed){
 		panic("Green TEE Entry Done SMC Failed.\n");
 	}
+
 
 }
