@@ -33,6 +33,7 @@
 #define PL011_UARTICR		(PL011_BASE + 0x44)
 #define PL011_UARTDMACR		(PL011_BASE + 0x48)
 
+#define PL011_PREINIT_BUFFER_SIZE 512
 
 void pl011_init(void);
 void pl011_write(char* str);

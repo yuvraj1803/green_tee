@@ -6,6 +6,13 @@
 
 static int pl011_active = 0;
 
+static char pl011_preinit_buffer[PL011_PREINIT_BUFFER_SIZE];
+static int pl011_preinit_buffer_begin = 0;
+static int pl011_preinit_buffer_end = 0;
+
+
+
+
 void pl011_wait(void){
 	while(io_read32(PL011_UARTFR) & PL011_UARTFR_BUSY);
 }
@@ -58,8 +65,20 @@ void pl011_mask_all_interrupts(void){
 	io_write32(PL011_UARTIMSC, 0x7F);
 }
 
+void pl011_preinit_buffer_push(char c){
+	pl011_preinit_buffer[pl011_preinit_buffer_begin] = c;
+
+	pl011_preinit_buffer_begin++;
+	if(pl011_preinit_buffer_begin == PL011_PREINIT_BUFFER_SIZE) pl011_preinit_buffer_begin = 0;
+}
+
+
 void pl011_putc(char c){
-	if(!pl011_active) return;
+	// if the pl011 device has not yet been initialized, the stream is stored in pl011_preinit_buffer[] and is flushed at the time of initialization.
+	if(pl011_active == 0){
+		pl011_preinit_buffer_push(c);
+		return;
+	}
 
 	pl011_wait();
 	
@@ -74,6 +93,7 @@ void pl011_putc(char c){
 }
 
 void pl011_write(char* str){
+
 	while(*str) pl011_putc(*str++);
 }	
 
@@ -88,6 +108,20 @@ void pl011_write_hex(unsigned long long x){
         n+=n>9?0x37:0x30;
         pl011_putc(n);
     }
+}
+
+
+void pl011_preinit_buffer_flush(){
+	if(pl011_active == 0) return; // extra sanity check
+
+	while(pl011_preinit_buffer_begin != pl011_preinit_buffer_end){
+
+		pl011_putc(pl011_preinit_buffer[pl011_preinit_buffer_end]);
+
+		pl011_preinit_buffer_end++;
+		if(pl011_preinit_buffer_end == PL011_PREINIT_BUFFER_SIZE) pl011_preinit_buffer_end = 0;
+	}
+
 }
 
 void pl011_init(void){
@@ -106,7 +140,7 @@ void pl011_init(void){
 	pl011_mask_all_interrupts();
 	pl011_enable();
 
-
+	pl011_preinit_buffer_flush();
 
 	LOG("PL011 Initialised\n");
 
