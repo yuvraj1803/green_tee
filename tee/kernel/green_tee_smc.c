@@ -6,8 +6,8 @@
 #include <mm/mmu.h>
 #include <mm/mm.h>
 #include <crypto/otp.h>
+#include <kernel/exceptions.h>
 
-extern uint64_t vector_table;
 extern uint64_t __green_tee_smc_handler;
 
 
@@ -108,7 +108,7 @@ green_tee_smc_fail:
 	green_tee_smc_failed();
 }
 
-void green_tee_smc_entry_done(){
+void green_tee_smc_entry_done(green_tee_vector_table_t* vector_table){
     struct arm_smccc_call_params params;
 	struct arm_smccc_call_return ret;
 
@@ -117,8 +117,7 @@ void green_tee_smc_entry_done(){
 	params.service_call = ARM_SMCCC_TOS_OEN_MIN;
 	params.function_number = GREEN_TEE_SMC_ENTRY_DONE;
     memset(params.args, 0, sizeof(params.args));
-	params.args[1] = (uint64_t) &vector_table;
-	params.args[2] = (uint64_t) &__green_tee_smc_handler;
+	params.args[1] = (uint64_t) vector_table;
 
 	arm_smccc_call(&params, &ret);
 

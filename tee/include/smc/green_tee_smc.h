@@ -11,8 +11,9 @@
 
 
 #include <smc/smccc.h>
+#include <kernel/exceptions.h>
 
-void green_tee_smc_entry_done();
+void green_tee_smc_entry_done(green_tee_vector_table_t* vector_table);
 void green_tee_smc_handler(uint64_t smc_fid, uint64_t x1, uint64_t x2, uint64_t x3, uint64_t x4);
 
 #endif

@@ -24,8 +24,20 @@
 #define LOWER_EL_32_SERROR      15
 
 #ifndef __ASSEMBLER__
+#include <stdint.h>
 
+typedef struct green_tee_vector_table{
+   	uint64_t yield_smc_entry;
+	uint64_t fast_smc_entry;
+	uint64_t cpu_on_entry;
+	uint64_t cpu_off_entry;
+	uint64_t cpu_resume_entry;
+	uint64_t cpu_suspend_entry;
+	uint64_t fiq_entry;
+	uint64_t system_off_entry;
+	uint64_t system_reset_entry;
 
+} green_tee_vector_table_t;
 
 
 #endif /* __ASSEMBLER__*/
