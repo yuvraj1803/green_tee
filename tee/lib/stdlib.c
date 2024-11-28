@@ -5,6 +5,12 @@
 char num_a[20];
 char* itoa(long long num){
 
+		if(num == 0){
+			num_a[0] = '0';
+			num_a[1] = '\0';
+			return num_a;
+		}
+
 	    int digits = 0;
 	    int temp = num;
 	    while(temp > 0){
