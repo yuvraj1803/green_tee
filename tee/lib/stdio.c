@@ -1,6 +1,7 @@
 #include <drivers/pl011.h>
 #include <stdarg.h>
 #include <lib/stdlib.h>
+#include <kernel/misc.h>
 
 void printf(char* fmt, ...){
 	va_list ap;
@@ -36,10 +37,12 @@ void printf(char* fmt, ...){
 }
 
 void LOG(char* fmt, ...){
-        va_list ap;
-        va_start(ap, fmt);
-	
-	pl011_write("[LOG]: ");
+	va_list ap;
+	va_start(ap, fmt);
+
+	int cpu = get_cpu_id();
+
+	printf("[LOG:CPU:%d] ", cpu);
 
         for(char*p = fmt; *p; p++){
                 if(*p != '%'){
