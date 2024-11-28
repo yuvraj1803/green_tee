@@ -22,6 +22,7 @@ OBJ += ./build/kernel/green_tee_smc.o
 OBJ += ./build/kernel/generic_timer.S.o
 OBJ += ./build/kernel/generic_timer.o
 OBJ += ./build/kernel/interrupts.S.o
+OBJ += ./build/kernel/misc.S.o
 OBJ += ./build/drivers/pl011.o
 OBJ += ./build/mm/io.S.o
 OBJ += ./build/mm/mm.o
