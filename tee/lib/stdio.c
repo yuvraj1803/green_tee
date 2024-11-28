@@ -42,7 +42,7 @@ void LOG(char* fmt, ...){
 
 	int cpu = get_cpu_id();
 
-	printf("[LOG:CPU:%d] ", cpu);
+	printf("[LOG] CPU:#%d ", cpu);
 
         for(char*p = fmt; *p; p++){
                 if(*p != '%'){
