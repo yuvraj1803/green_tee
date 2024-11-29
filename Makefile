@@ -86,7 +86,7 @@ QEMU_ARGS ?= \
 	     -nographic \
 	     -kernel linux/arch/arm64/boot/Image \
 	     -cpu max \
-	     -smp 1 \
+	     -smp 6 \
 	     -machine virt,secure=on,gic-version=3 \
 	     -bios $(TFA_BUILD_PATH)/../qemu_fw.bios \
 	     -drive file=linux/rootfs.ext4,if=none,format=raw,id=hd0 -device virtio-blk-device,drive=hd0 \

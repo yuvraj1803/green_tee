@@ -105,6 +105,19 @@ int mmu_map_device(uint64_t base, uint64_t size){
 
 }
 
+void mmu_secondary_init(void){
+    mmu_disable();
+
+    mmu_load_ttbr0_el1((uint64_t) l1_table);
+    mmu_load_tcr_el1(TCR_EL1);
+    mmu_load_mair_el1(MAIR_EL1);
+    mmu_invalidate_tlb();
+
+    mmu_enable();
+    
+    LOG("MMU initialised\n");
+
+}
 
 void mmu_init(void){
 

@@ -11,7 +11,25 @@
 extern uint64_t __green_tee_smc_handler;
 
 
-static void green_tee_smc_handled(){
+void green_tee_smc_pm_ack(){
+	struct arm_smccc_call_params params;
+	struct arm_smccc_call_return ret;
+
+	params.fast_call = 1;
+	params.smc64 = 1;
+	params.service_call = ARM_SMCCC_TOS_OEN_MIN;
+	params.function_number = GREEN_TEE_SMC_PM_ACK;
+	
+	LOG("SMC PM ACK: Secondary CPU switching to Normal World\n");
+
+	arm_smccc_call(&params, &ret);
+
+	if(ret.call_failed){
+		panic("Green TEE Entry Done SMC Failed.\n");
+	}
+}
+
+void green_tee_smc_handled(){
 	struct arm_smccc_call_params params;
 	struct arm_smccc_call_return ret;
 
@@ -19,6 +37,8 @@ static void green_tee_smc_handled(){
 	params.smc64 = 1;
 	params.service_call = ARM_SMCCC_TOS_OEN_MIN;
 	params.function_number = GREEN_TEE_SMC_HANDLED;
+	
+	LOG("Sending SMC ACK to SPD\n");
 
 	arm_smccc_call(&params, &ret);
 
@@ -35,6 +55,8 @@ static void green_tee_smc_failed(){
 	params.smc64 = 1;
 	params.service_call = ARM_SMCCC_TOS_OEN_MIN;
 	params.function_number = GREEN_TEE_SMC_FAILED;
+	
+	LOG("Sending SMC NACK to SPD\n");
 
 	arm_smccc_call(&params, &ret);
 

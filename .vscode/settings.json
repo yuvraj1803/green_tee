@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "pl011.h": "c",
+        "platform.h": "c",
+        "runtime_svc.h": "c",
+        "debug.h": "c",
+        "bl31.h": "c",
+        "*.inc": "c",
+        "context_mgmt.h": "c"
+    }
+}

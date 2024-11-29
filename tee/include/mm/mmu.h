@@ -5,6 +5,7 @@
 
 void mmu_disable();
 void mmu_init(void);
+void mmu_secondary_init(void);  
 int  mmu_map_device(uint64_t base, uint64_t size);
 void mmu_enable();
 void mmu_invalidate_tlb();
