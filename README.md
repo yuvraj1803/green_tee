@@ -32,16 +32,15 @@ The userspace client can use ioctl() to issue requests to the Linux Kernel which
 ## Running
 QEMU forwards S-EL1's serial device data to localhost:12345. A netcat connection has to be established on another terminal.
 
-`make nc` (another terminal)
+`make nc` (terminal 2)
 
-`make run`
+`make run`(terminal 1)
 
 ## Example
-**Upper Terminal**: Linux Kernel
+**Lower Terminal**: Linux Kernel
 
-**Lower Terminal**: Green TEE
+**Upper Terminal**: Green TEE
 
-![Screenshot from 2024-09-18 14-33-06](https://github.com/user-attachments/assets/260bee90-d869-4056-974d-784ec9561cf3)
-
+![Screenshot from 2024-11-29 12-53-26](https://github.com/user-attachments/assets/ab369bd7-dda1-41de-9bc8-82436bf97634)
 
 	
