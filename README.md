@@ -37,9 +37,10 @@ QEMU forwards S-EL1's serial device data to localhost:12345. A netcat connection
 `make run`(terminal 1)
 
 ## Example
+**Upper Terminal**: Green TEE
+
 **Lower Terminal**: Linux Kernel
 
-**Upper Terminal**: Green TEE
 
 ![Screenshot from 2024-11-29 12-53-26](https://github.com/user-attachments/assets/ab369bd7-dda1-41de-9bc8-82436bf97634)
 
